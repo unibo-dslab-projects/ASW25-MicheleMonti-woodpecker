@@ -1,7 +1,7 @@
 import Piece from "./Piece";
 import Square from "./Square";
 
-const CELLS = [1, 2, 3, 4, 5, 6, 7, 8].reverse().flatMap(c => 'ABCDEFGH'.split('').map(r => c + r));
+const CELLS = [1, 2, 3, 4, 5, 6, 7, 8].reverse().flatMap(c => 'ABCDEFGH'.split('').map(r => r + c));
 const DEFAULT_BOARD = {
     A8: {type: 'rook', color: 'black'}, B8: {type: 'knight', color: 'black'}, C8: {type: 'bishop', color: 'black'}, D8: {type: 'queen', color: 'black'}, E8: {type: 'king', color: 'black'}, F8: {type: 'bishop', color: 'black'}, G8: {type: 'knight', color: 'black'}, H8: {type: 'rook', color: 'black'},
     A7: {type: 'pawn', color: 'black'}, B7: {type: 'pawn', color: 'black'}, C7: {type: 'pawn', color: 'black'}, D7: {type: 'pawn', color: 'black'}, E7: {type: 'pawn', color: 'black'}, F7: {type: 'pawn', color: 'black'}, G7: {type: 'pawn', color: 'black'}, H7: {type: 'pawn', color: 'black'},
