@@ -11,7 +11,13 @@ const DEFAULT_BOARD = {
 
 export default function Board() {
     return <div className="grid chess-board-grid-area">
-        {CELLS.map(cell => <Square key={cell} name={cell} />)}
-        {Object.entries(DEFAULT_BOARD).map(([cell, piece]) => <Piece key={cell} type={piece.type} color={piece.color} cell={cell} />)}
+        <div className="contents">
+            {CELLS.map(cell => <Square key={cell} name={cell} />)}
+        </div>
+        <div className="contents">
+            {Object.entries(DEFAULT_BOARD).map(([cell, piece]) => 
+                <Piece key={cell} type={piece.type} color={piece.color} cell={cell} />
+            )}
+        </div>
     </div>;
 }
