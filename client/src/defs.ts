@@ -1,5 +1,7 @@
 export const PIECES_KINDS = ['king', 'queen', 'rook', 'bishop', 'knight', 'pawn'] as const;
 export const PIECES_COLORS = ['white', 'black'] as const;
+export const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as const;
+export const ROWS = ['1', '2', '3', '4', '5', '6', '7', '8'] as const;
 export const CELLS = [
     'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8',
     'B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8',
@@ -31,4 +33,3 @@ export type PieceColor = typeof PIECES_COLORS[number];
 export type BoardCell = typeof CELLS[number];
 
 export type PieceType = {type: PieceKind, color: PieceColor};
-export type BoardType = Record<BoardCell, PieceType>;

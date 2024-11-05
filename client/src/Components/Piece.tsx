@@ -1,11 +1,10 @@
-type PieceType = 'king' | 'queen' | 'rook' | 'bishop' | 'knight' | 'pawn' | null;
-type PieceColor = 'white' | 'black';
+import { BoardCell, PieceType } from "../defs";
 
-export default function Piece({type, color, cell}: {type: PieceType, color: PieceColor, cell: string}) {
-    const url = `/pieces/pieces.svg#${type}`;
+export default function Piece({piece, cell}: {piece: PieceType, cell: BoardCell}) {
+    const url = `/pieces/pieces.svg#${piece.type}`;
     return <svg
         data-cell={cell}
-        className={`pointer-events-none ${color==='white' ? 'text-white-piece' : 'text-black-piece'}`}
+        className={`pointer-events-none ${piece.color==='white' ? 'text-white-piece' : 'text-black-piece'}`}
         viewBox="0 0 50 50"
         shapeRendering="geometricPrecision">
         <use href={url} fill="currentColor" />
