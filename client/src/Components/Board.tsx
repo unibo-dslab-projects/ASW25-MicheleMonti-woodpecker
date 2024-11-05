@@ -9,15 +9,43 @@ const DEFAULT_BOARD = {
     A1: {type: 'rook', color: 'white'}, B1: {type: 'knight', color: 'white'}, C1: {type: 'bishop', color: 'white'}, D1: {type: 'queen', color: 'white'}, E1: {type: 'king', color: 'white'}, F1: {type: 'bishop', color: 'white'}, G1: {type: 'knight', color: 'white'}, H1: {type: 'rook', color: 'white'},
 }
 
+function getCellColor(cell) {
+    const column = cell[0];
+    const row = parseInt(cell[1]);
+    const isEvenColumn = 'ACEG'.includes(column);
+    return (isEvenColumn && row % 2 === 0) || (!isEvenColumn && row % 2 !== 0) ? 'white' : 'black';
+}
+
 export default function Board() {
-    return <div className="grid chess-board-grid-area">
-        <div className="contents">
-            {CELLS.map(cell => <Square key={cell} name={cell} />)}
+    const columns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    const rows = [8, 7, 6, 5, 4, 3, 2, 1];
+
+    return (
+        <div className="flex items-center justify-center h-screen">
+            <div className="relative">
+                <div className="absolute left-[-20px] top-0 h-full flex flex-col justify-between py-2">
+                    {rows.map((row) => (
+                        <span key={row} className="text-center text-gray-700">{row}</span>
+                    ))}
+                </div>
+                <div className="grid chess-board-grid-area w-[400px] h-[400px] rounded-lg overflow-hidden">
+                    <div className="contents">
+                        {CELLS.map(cell => (
+                            <Square key={cell} name={cell} color={getCellColor(cell)} />
+                        ))}
+                    </div>
+                    <div className="contents">
+                        {Object.entries(DEFAULT_BOARD).map(([cell, piece]) => 
+                            <Piece key={cell} type={piece.type} color={piece.color} cell={cell} />
+                        )}
+                    </div>
+                </div>
+                <div className="absolute bottom-[-20px] left-0 w-full flex justify-between px-2">
+                    {columns.map((col) => (
+                        <span key={col} className="text-center text-gray-700">{col}</span>
+                    ))}
+                </div>
+            </div>
         </div>
-        <div className="contents">
-            {Object.entries(DEFAULT_BOARD).map(([cell, piece]) => 
-                <Piece key={cell} type={piece.type} color={piece.color} cell={cell} />
-            )}
-        </div>
-    </div>;
+    );
 }
