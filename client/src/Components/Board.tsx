@@ -20,12 +20,7 @@ export default function Board() {
     return (
         <div className="flex items-center justify-center h-screen">
             <div className="relative">
-                <div className="absolute left-[-20px] top-0 h-full flex flex-col justify-between py-2">
-                    {ROWS.map((row) => (
-                        <span key={row} className="text-center text-gray-700">{row}</span>
-                    ))}
-                </div>
-                <div className="grid chess-board-grid-area w-[400px] h-[400px] rounded-lg overflow-hidden">
+                <div className="grid chess-board-grid-area w-[36w] h-[36vw] rounded-lg overflow-hidden">
                     <div className="contents">
                         {CELLS.map(cell =>
                             <Square key={cell} name={cell} color={getCellColor(cell)} />
@@ -36,11 +31,6 @@ export default function Board() {
                             <Piece key={cell} piece={piece} cell={cell} />
                         )}
                     </div>
-                </div>
-                <div className="absolute bottom-[-20px] left-0 w-full flex justify-between px-2">
-                    {COLUMNS.map((col) => (
-                        <span key={col} className="text-center text-gray-700">{col}</span>
-                    ))}
                 </div>
             </div>
         </div>
