@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { BoardCell, CELLS, COLUMNS, PieceColor, PIECES, PieceType, ROWS } from "../defs";
+import { useRef, useState } from "react";
+import { BoardCell, CELLS, COLUMNS, PieceColor, PieceType, ROWS } from "../defs";
 import Piece from "./Piece";
 import Square from "./Square";
 
 const DEFAULT_BOARD = new Map<BoardCell, PieceType>([
-    ['A1', PIECES.WHITE_ROOK], ['B1', PIECES.WHITE_KNIGHT], ['C1', PIECES.WHITE_BISHOP], ['D1', PIECES.WHITE_QUEEN], ['E1', PIECES.WHITE_KING], ['F1', PIECES.WHITE_BISHOP], ['G1', PIECES.WHITE_KNIGHT], ['H1', PIECES.WHITE_ROOK],
-    ['A2', PIECES.WHITE_PAWN], ['B2', PIECES.WHITE_PAWN], ['C2', PIECES.WHITE_PAWN], ['D2', PIECES.WHITE_PAWN], ['E2', PIECES.WHITE_PAWN], ['F2', PIECES.WHITE_PAWN], ['G2', PIECES.WHITE_PAWN], ['H2', PIECES.WHITE_PAWN],
-    ['A7', PIECES.BLACK_PAWN], ['B7', PIECES.BLACK_PAWN], ['C7', PIECES.BLACK_PAWN], ['D7', PIECES.BLACK_PAWN], ['E7', PIECES.BLACK_PAWN], ['F7', PIECES.BLACK_PAWN], ['G7', PIECES.BLACK_PAWN], ['H7', PIECES.BLACK_PAWN],
-    ['A8', PIECES.BLACK_ROOK], ['B8', PIECES.BLACK_KNIGHT], ['C8', PIECES.BLACK_BISHOP], ['D8', PIECES.BLACK_QUEEN], ['E8', PIECES.BLACK_KING], ['F8', PIECES.BLACK_BISHOP], ['G8', PIECES.BLACK_KNIGHT], ['H8', PIECES.BLACK_ROOK],
+    ['A1', new PieceType('rook', 'white')], ['B1', new PieceType('knight', 'white')], ['C1', new PieceType('bishop', 'white')], ['D1', new PieceType('queen', 'white')], ['E1', new PieceType('king', 'white')], ['F1', new PieceType('bishop', 'white')], ['G1', new PieceType('knight', 'white')], ['H1', new PieceType('rook', 'white')],
+    ['A2', new PieceType('pawn', 'white')], ['B2', new PieceType('pawn', 'white')], ['C2', new PieceType('pawn', 'white')], ['D2', new PieceType('pawn', 'white')], ['E2', new PieceType('pawn', 'white')], ['F2', new PieceType('pawn', 'white')], ['G2', new PieceType('pawn', 'white')], ['H2', new PieceType('pawn', 'white')],
+    ['A7', new PieceType('pawn', 'black')], ['B7', new PieceType('pawn', 'black')], ['C7', new PieceType('pawn', 'black')], ['D7', new PieceType('pawn', 'black')], ['E7', new PieceType('pawn', 'black')], ['F7', new PieceType('pawn', 'black')], ['G7', new PieceType('pawn', 'black')], ['H7', new PieceType('pawn', 'black')],
+    ['A8', new PieceType('rook', 'black')], ['B8', new PieceType('knight', 'black')], ['C8', new PieceType('bishop', 'black')], ['D8', new PieceType('queen', 'black')], ['E8', new PieceType('king', 'black')], ['F8', new PieceType('bishop', 'black')], ['G8', new PieceType('knight', 'black')], ['H8', new PieceType('rook', 'black')],
 ]);
 
 function getCellColor(cell: BoardCell): PieceColor {
@@ -20,6 +20,15 @@ function getCellColor(cell: BoardCell): PieceColor {
 export default function Board() {
     const [board, setBoard] = useState(DEFAULT_BOARD);
     const [selectedCell, setSelectedCell] = useState<BoardCell | null>(null);
+
+    const nextKey = useRef(1);
+    const keyMap = useRef(new WeakMap<PieceType, number>());
+    function getPieceKey(piece: PieceType) {
+        if (!keyMap.current.has(piece)) {
+            keyMap.current.set(piece, nextKey.current++);
+        }
+        return keyMap.current.get(piece);
+    }
 
     function onSelectedCell(cell: BoardCell) {
         if (selectedCell) {
@@ -46,8 +55,8 @@ export default function Board() {
                         )}
                     </div>
                     <div className="contents">
-                        {[...DEFAULT_BOARD].map(([cell, piece]) => 
-                            <Piece key={cell} piece={piece} cell={cell} />
+                        {[...board].map(([cell, piece]) => 
+                            <Piece key={getPieceKey(piece)} piece={piece} cell={cell} />
                         )}
                         <div className="contents">
                             {COLUMNS.map(c =>

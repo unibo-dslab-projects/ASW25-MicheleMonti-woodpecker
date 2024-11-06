@@ -13,23 +13,10 @@ export const CELLS = [
     'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8',
 ] as const;
 
-export const PIECES: Record<string, PieceType> = {
-    WHITE_KING: {type: 'king', color: 'white'},
-    WHITE_QUEEN: {type: 'queen', color: 'white'},
-    WHITE_ROOK: {type: 'rook', color: 'white'},
-    WHITE_BISHOP: {type: 'bishop', color: 'white'},
-    WHITE_KNIGHT: {type: 'knight', color: 'white'},
-    WHITE_PAWN: {type: 'pawn', color: 'white'},
-    BLACK_KING: {type: 'king', color: 'black'},
-    BLACK_QUEEN: {type: 'queen', color: 'black'},
-    BLACK_ROOK: {type: 'rook', color: 'black'},
-    BLACK_BISHOP: {type: 'bishop', color: 'black'},
-    BLACK_KNIGHT: {type: 'knight', color: 'black'},
-    BLACK_PAWN: {type: 'pawn', color: 'black'},
-} as const;
-
 export type PieceKind = typeof PIECES_KINDS[number];
 export type PieceColor = typeof PIECES_COLORS[number];
 export type BoardCell = typeof CELLS[number];
 
-export type PieceType = {type: PieceKind, color: PieceColor};
+export class PieceType {
+    constructor(public type: PieceKind, public color: PieceColor) {}
+}
