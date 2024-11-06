@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BoardCell, CELLS, COLUMNS, PieceColor, PIECES, PieceType, ROWS } from "../defs";
 import Piece from "./Piece";
 import Square from "./Square";
@@ -17,17 +18,35 @@ function getCellColor(cell: BoardCell): PieceColor {
 }
 
 export default function Board() {
+    const [board, setBoard] = useState(DEFAULT_BOARD);
+    const [selectedCell, setSelectedCell] = useState<BoardCell | null>(null);
+
+    function onSelectedCell(cell: BoardCell) {
+        if (selectedCell) {
+            const piece = board.get(selectedCell);
+            if (!piece)
+                return;
+            const newBoard = new Map(board);
+            newBoard.set(cell, piece);
+            newBoard.delete(selectedCell);
+            setBoard(newBoard);
+            setSelectedCell(null);
+        } else if (board.has(cell)) {
+            setSelectedCell(cell);
+        }
+    }
+    
     return (
         <div className="flex items-center justify-center h-screen">
             <div className="relative">
                 <div className="grid chess-board-grid-area w-[36w] h-[36vw] rounded-lg overflow-hidden">
                     <div className="contents">
                         {CELLS.map(cell =>
-                            <Square key={cell} name={cell} color={getCellColor(cell)} />
+                            <Square key={cell} name={cell} color={getCellColor(cell)} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
                         )}
                     </div>
                     <div className="contents">
-                        {[...DEFAULT_BOARD].map(([cell, piece]) => 
+                        {[...board].map(([cell, piece]) => 
                             <Piece key={cell} piece={piece} cell={cell} />
                         )}
                     </div>
