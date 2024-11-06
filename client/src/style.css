@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 @layer components {
-    .chess-board-grid-area {
+    .desk-grid-area {
+        display: grid;
         grid-template:
             "r8 A8 B8 C8 D8 E8 F8 G8 H8" 1fr
             "r7 A7 B7 C7 D7 E7 F7 G7 H7" 1fr
@@ -16,6 +17,12 @@
             ".. rA rB rC rD rE rF rG rH" auto
             / auto 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr
             ;
+    }
+    .board-subgrid {
+        display: grid;
+        grid-row: A8 / A1;
+        grid-column: A1 / H1;
+        grid: subgrid / subgrid;
     }
 }
 

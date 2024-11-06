@@ -48,8 +48,8 @@ export default function Board() {
     return (
         <div className="flex items-center justify-center h-screen">
             <div className="relative">
-                <div className="grid chess-board-grid-area w-[36w] h-[36vw] rounded-lg overflow-hidden">
-                    <div className="contents">
+                <div className="desk-grid-area w-[min(50vw,50vw)]">
+                    <div className="board-subgrid rounded-lg overflow-hidden">
                         {CELLS.map(cell =>
                             <Square key={cell} name={cell} color={getCellColor(cell)} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
                         )}
