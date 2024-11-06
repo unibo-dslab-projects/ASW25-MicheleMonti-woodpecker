@@ -49,6 +49,16 @@ export default function Board() {
                         {[...board].map(([cell, piece]) => 
                             <Piece key={cell} piece={piece} cell={cell} />
                         )}
+                        <div className="contents">
+                            {COLUMNS.map(c =>
+                                <div key={c} style={{ gridArea: `r${c}`, color: 'gray' }} className="flex justify-center rounded-lg items-center">{c.toLowerCase()}</div>
+                            )}
+                        </div>
+                        <div className="contents">
+                            {ROWS.map(r =>
+                                <div key={r} style={{ gridArea: `r${r}`, color: 'gray', padding: '0.5rem' }} className="flex justify-center items-center">{r}</div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

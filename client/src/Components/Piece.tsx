@@ -5,7 +5,7 @@ export default function Piece({piece, cell}: {piece: PieceType, cell: BoardCell}
     return <svg
         data-cell={cell}
         className={`pointer-events-none ${piece.color==='white' ? 'text-white-piece' : 'text-black-piece'}`}
-        viewBox="0 0 50 50"
+        viewBox="-2.5 -2.5 60 60"
         shapeRendering="geometricPrecision">
         <use href={url} fill="currentColor" />
     </svg>;
