@@ -46,7 +46,7 @@ export default function Board() {
                         )}
                     </div>
                     <div className="contents">
-                        {[...board].map(([cell, piece]) => 
+                        {[...DEFAULT_BOARD].map(([cell, piece]) => 
                             <Piece key={cell} piece={piece} cell={cell} />
                         )}
                         <div className="contents">
