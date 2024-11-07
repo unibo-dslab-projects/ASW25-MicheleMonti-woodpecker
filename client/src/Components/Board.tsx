@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { BoardCell, CELLS, COLUMNS, PieceColor, PieceType, ROWS } from "../defs";
+import { BoardCell, DeskCell, BOARD_CELLS, COLUMNS, PieceColor, PieceType, ROWS, SideCell, WHITE_SIDE_CELLS, BLACK_SIDE_CELLS} from "../defs";
 import Piece from "./Piece";
 import Square from "./Square";
 
@@ -11,6 +11,11 @@ const DEFAULT_BOARD = new Map<BoardCell, PieceType>([
     ['A8', new PieceType('rook', 'black')], ['B8', new PieceType('knight', 'black')], ['C8', new PieceType('bishop', 'black')], ['D8', new PieceType('queen', 'black')], ['E8', new PieceType('king', 'black')], ['F8', new PieceType('bishop', 'black')], ['G8', new PieceType('knight', 'black')], ['H8', new PieceType('rook', 'black')],
 ]);
 
+const SIDE_CELLS_MAP = new Map<SideCell, PieceType>([
+    ['w1', new PieceType('rook', 'white')], ['w2', new PieceType('king', 'white')], ['w3', new PieceType('knight', 'white')], ['w4', new PieceType('queen', 'white')], ['w5', new PieceType('bishop', 'white')], ['w6', new PieceType('pawn', 'white')],
+    ['b1', new PieceType('bishop', 'black')], ['b2', new PieceType('pawn', 'black')], ['b3', new PieceType('knight', 'black')], ['b4', new PieceType('queen', 'black')], ['b5', new PieceType('rook', 'black')], ['b6', new PieceType('king', 'black')],
+]);
+
 function getCellColor(cell: BoardCell): PieceColor {
     const column = cell[0];
     const row = parseInt(cell[1]);
@@ -19,9 +24,8 @@ function getCellColor(cell: BoardCell): PieceColor {
 }
 
 export default function Board() {
-    const [board, setBoard] = useState(DEFAULT_BOARD);
-    const [selectedCell, setSelectedCell] = useState<BoardCell | null>(null);
-
+    const [board, setBoard] = useState<Map<DeskCell, PieceType>>(new Map([...DEFAULT_BOARD, ...SIDE_CELLS_MAP]));
+    const [selectedCell, setSelectedCell] = useState<DeskCell | null>(null);
     const nextKey = useRef(1);
     const keyMap = useRef(new WeakMap<PieceType, number>());
     function getPieceKey(piece: PieceType) {
@@ -31,17 +35,28 @@ export default function Board() {
         return keyMap.current.get(piece);
     }
 
-    function onSelectedCell(cell: BoardCell) {
+    function onSelectedCell(cell: DeskCell) {
         if (selectedCell) {
-            const piece = board.get(selectedCell);
-            if (!piece)
-                return;
-            const newBoard = new Map(board);
-            newBoard.set(cell, piece);
-            newBoard.delete(selectedCell);
-            setBoard(newBoard);
-            setSelectedCell(null);
-        } else if (board.has(cell)) {
+            if (selectedCell[0] === 'w' || selectedCell[0] === 'b') {   
+                const piece = board.get(selectedCell as SideCell);
+                if (!piece)
+                    return;
+                const newBoard = new Map(board);
+                newBoard.set(cell as SideCell, piece);
+                newBoard.delete(selectedCell as SideCell);
+                setBoard(newBoard);
+                setSelectedCell(null);
+            } else {
+                const piece = board.get(selectedCell as BoardCell);
+                if (!piece)
+                    return;
+                const newBoard = new Map(board);
+                newBoard.set(cell as BoardCell, piece);
+                newBoard.delete(selectedCell as BoardCell);
+                setBoard(newBoard);
+                setSelectedCell(null);
+            }
+        } else if (board.has(cell as BoardCell)) {
             setSelectedCell(cell);
         }
     }
@@ -49,9 +64,9 @@ export default function Board() {
     return (
         <div className="flex items-center justify-center h-screen bg-black-background">
             <div className="relative">
-                <div className="desk-grid-area w-[min(70vh,70vw)]">
+                <div className="desk-grid-area w-[min(80vh,80vw)]">
                     <div className="board-subgrid rounded-lg overflow-hidden">
-                        {CELLS.map(cell =>
+                        {BOARD_CELLS.map(cell =>
                             <Square key={cell} name={cell} color={getCellColor(cell)} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
                         )}
                     </div>
@@ -61,14 +76,24 @@ export default function Board() {
                         )}
                         <div className="contents">
                             {COLUMNS.map(c =>
-                                <div key={c} style={{ gridArea: `r${c}`, color: 'gray' }} className="flex justify-center rounded-lg items-center">{c.toLowerCase()}</div>
+                                <div key={c} style={{ gridArea: `r${c}`}} className="text-neutral-400 flex justify-center rounded-lg items-center">{c.toLowerCase()}</div>
                             )}
                         </div>
                         <div className="contents">
                             {ROWS.map(r =>
-                                <div key={r} style={{ gridArea: `r${r}`, color: 'gray', padding: '0.5rem' }} className="flex justify-center items-center">{r}</div>
+                                <div key={r} style={{ gridArea: `r${r}`}} className="p-2 text-neutral-400 flex justify-center items-center">{r}</div>
                             )}
                         </div>
+                    </div>
+                    <div className="white-side-subgrid rounded-lg overflow-hidden">
+                        {WHITE_SIDE_CELLS.map(cell =>
+                            <Square key={cell} name={cell} color={"black"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
+                        )}
+                    </div>
+                    <div className="black-side-subgrid rounded-lg overflow-hidden">
+                        {BLACK_SIDE_CELLS.map(cell =>
+                            <Square key={cell} name={cell} color={"white"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
+                        )}
                     </div>
                 </div>
             </div>

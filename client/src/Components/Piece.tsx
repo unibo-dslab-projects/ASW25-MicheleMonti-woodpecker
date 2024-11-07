@@ -1,6 +1,6 @@
-import { BoardCell, PieceType } from "../defs";
+import { DeskCell, PieceType } from "../defs";
 
-export default function Piece({piece, cell}: {piece: PieceType, cell: BoardCell}) {
+export default function Piece({piece, cell}: {piece: PieceType, cell: DeskCell}) {
     const url = `/pieces/pieces.svg#${piece.type}`;
     return <svg
         data-cell={cell}

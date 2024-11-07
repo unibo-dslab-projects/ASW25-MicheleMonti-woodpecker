@@ -1,6 +1,6 @@
-import { BoardCell, PieceColor } from "../defs";
+import { DeskCell, PieceColor} from "../defs";
 
-export default function Square({name, color, onClick, isSelected}: {name: BoardCell, color: PieceColor, onClick: () => void, isSelected: boolean}) {
+export default function Square({name, color, onClick, isSelected}: {name: DeskCell, color: PieceColor, onClick: () => void, isSelected: boolean}) {
     return <button 
         data-cell={name}
         onClick={onClick}
