@@ -3,6 +3,7 @@ import { BoardCell, CELLS, COLUMNS, PieceColor, PieceType, ROWS } from "../defs"
 import Piece from "./Piece";
 import Square from "./Square";
 
+
 const DEFAULT_BOARD = new Map<BoardCell, PieceType>([
     ['A1', new PieceType('rook', 'white')], ['B1', new PieceType('knight', 'white')], ['C1', new PieceType('bishop', 'white')], ['D1', new PieceType('queen', 'white')], ['E1', new PieceType('king', 'white')], ['F1', new PieceType('bishop', 'white')], ['G1', new PieceType('knight', 'white')], ['H1', new PieceType('rook', 'white')],
     ['A2', new PieceType('pawn', 'white')], ['B2', new PieceType('pawn', 'white')], ['C2', new PieceType('pawn', 'white')], ['D2', new PieceType('pawn', 'white')], ['E2', new PieceType('pawn', 'white')], ['F2', new PieceType('pawn', 'white')], ['G2', new PieceType('pawn', 'white')], ['H2', new PieceType('pawn', 'white')],
@@ -46,9 +47,9 @@ export default function Board() {
     }
     
     return (
-        <div className="flex items-center justify-center h-screen">
+        <div className="flex items-center justify-center h-screen bg-black-background">
             <div className="relative">
-                <div className="desk-grid-area w-[min(50vw,50vw)]">
+                <div className="desk-grid-area w-[min(70vh,70vw)]">
                     <div className="board-subgrid rounded-lg overflow-hidden">
                         {CELLS.map(cell =>
                             <Square key={cell} name={cell} color={getCellColor(cell)} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
