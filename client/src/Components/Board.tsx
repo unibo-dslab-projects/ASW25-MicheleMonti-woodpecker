@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BoardCell, DeskCell, BOARD_CELLS, COLUMNS, PieceColor, PieceType, ROWS, SideCell, WHITE_SIDE_CELLS, BLACK_SIDE_CELLS } from "../defs";
 import Piece from "./Piece";
 import Square from "./Square";
@@ -26,6 +26,8 @@ function getCellColor(cell: BoardCell): PieceColor {
 export default function Board() {
     const [board, setBoard] = useState<Map<DeskCell, PieceType>>(new Map([...DEFAULT_BOARD, ...SIDE_CELLS_MAP]));
     const [selectedCell, setSelectedCell] = useState<DeskCell | null>(null);
+
+    const gridElement = useRef<HTMLDivElement>(null);
     const nextKey = useRef(1);
     const keyMap = useRef(new WeakMap<PieceType, number>());
     function getPieceKey(piece: PieceType) {
@@ -49,40 +51,77 @@ export default function Board() {
             setSelectedCell(cell);
         }
     }
+    
+    useEffect(() => {
+        function callback(mutations: MutationRecord[]) {
+            let from = null;
+            let to = null;
+            let piece = null;
+            for (const m of mutations) {
+                if (m.addedNodes.length) {
+                    to = m.target as Element;
+                    piece = m.addedNodes[0] as Element;
+                } else if (m.removedNodes.length) {
+                    from = m.target as Element;
+                }
+            }
+            if (from && to && piece) {
+                const rFrom = from.getBoundingClientRect();
+                const rTo = to.getBoundingClientRect();
+                const dx = rFrom.x - rTo.x;
+                const dy = rFrom.y - rTo.y;
+                piece.animate([
+                    { translate: `${dx}px ${dy}px` },
+                    { translate: "0px 0px" },
+                ], {
+                    duration: 200,
+                    easing: "cubic-bezier(0.65, 0, 0.35, 1)"
+                })
+            }
+        }
+        if (gridElement.current) {
+            new MutationObserver(callback).observe(
+                gridElement.current, 
+                {subtree: true, childList: true, attributes: false, characterData: false}
+            );
+        }
+      }, []);
+    
 
     return (
         <div className="flex items-center justify-center h-screen bg-black-background">
             <div className="relative">
-                <div className="desk-grid-area w-[min(80vh,80vw)]">
+                <div ref={gridElement} className="desk-grid-area w-[min(80vh,80vw)]">
                     <div className="board-subgrid rounded-lg overflow-hidden">
                         {BOARD_CELLS.map(cell =>
-                            <Square key={cell} name={cell} color={getCellColor(cell)} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
+                            <Square key={cell} name={cell} color={getCellColor(cell)} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                <Piece piece={board.get(cell)} />
+                            </Square>
                         )}
                     </div>
                     <div className="white-side-subgrid rounded-lg overflow-hidden">
                         {WHITE_SIDE_CELLS.map(cell =>
-                            <Square key={cell} name={cell} color={"black"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
+                            <Square key={cell} name={cell} color={"black"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                <Piece piece={board.get(cell)} />
+                            </Square>
                         )}
                     </div>
                     <div className="black-side-subgrid rounded-lg overflow-hidden">
                         {BLACK_SIDE_CELLS.map(cell =>
-                            <Square key={cell} name={cell} color={"white"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
+                            <Square key={cell} name={cell} color={"white"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                <Piece piece={board.get(cell)} />
+                            </Square>
                         )}
                     </div>
                     <div className="contents">
-                        {[...board].map(([cell, piece]) =>
-                            <Piece key={getPieceKey(piece)} piece={piece} cell={cell} />
+                        {COLUMNS.map(c =>
+                            <div key={c} style={{ gridArea: `r${c}`, color: 'gray' }} className="flex justify-center rounded-lg items-center">{c.toLowerCase()}</div>
                         )}
-                        <div className="contents">
-                            {COLUMNS.map(c =>
-                                <div key={c} style={{ gridArea: `r${c}` }} className="text-neutral-400 flex justify-center rounded-lg items-center">{c.toLowerCase()}</div>
-                            )}
-                        </div>
-                        <div className="contents">
-                            {ROWS.map(r =>
-                                <div key={r} style={{ gridArea: `r${r}` }} className="p-2 text-neutral-400 flex justify-center items-center">{r}</div>
-                            )}
-                        </div>
+                    </div>
+                    <div className="contents">
+                        {ROWS.map(r =>
+                            <div key={r} style={{ gridArea: `r${r}`, color: 'gray', padding: '0.5rem' }} className="flex justify-center items-center">{r}</div>
+                        )}
                     </div>
                 </div>
             </div>
