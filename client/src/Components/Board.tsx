@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { BoardCell, DeskCell, BOARD_CELLS, COLUMNS, PieceColor, PieceType, ROWS, SideCell, WHITE_SIDE_CELLS, BLACK_SIDE_CELLS} from "../defs";
+import { BoardCell, DeskCell, BOARD_CELLS, COLUMNS, PieceColor, PieceType, ROWS, SideCell, WHITE_SIDE_CELLS, BLACK_SIDE_CELLS } from "../defs";
 import Piece from "./Piece";
 import Square from "./Square";
 
@@ -37,30 +37,19 @@ export default function Board() {
 
     function onSelectedCell(cell: DeskCell) {
         if (selectedCell) {
-            if (selectedCell[0] === 'w' || selectedCell[0] === 'b') {   
-                const piece = board.get(selectedCell as SideCell);
-                if (!piece)
-                    return;
-                const newBoard = new Map(board);
-                newBoard.set(cell as SideCell, piece);
-                newBoard.delete(selectedCell as SideCell);
-                setBoard(newBoard);
-                setSelectedCell(null);
-            } else {
-                const piece = board.get(selectedCell as BoardCell);
-                if (!piece)
-                    return;
-                const newBoard = new Map(board);
-                newBoard.set(cell as BoardCell, piece);
-                newBoard.delete(selectedCell as BoardCell);
-                setBoard(newBoard);
-                setSelectedCell(null);
-            }
-        } else if (board.has(cell as BoardCell)) {
+            const piece = board.get(selectedCell);
+            if (!piece)
+                return;
+            const newBoard = new Map(board);
+            newBoard.set(cell, piece);
+            newBoard.delete(selectedCell);
+            setBoard(newBoard);
+            setSelectedCell(null);
+        } else if (board.has(cell)) {
             setSelectedCell(cell);
         }
     }
-    
+
     return (
         <div className="flex items-center justify-center h-screen bg-black-background">
             <div className="relative">
@@ -71,17 +60,17 @@ export default function Board() {
                         )}
                     </div>
                     <div className="contents">
-                        {[...board].map(([cell, piece]) => 
+                        {[...board].map(([cell, piece]) =>
                             <Piece key={getPieceKey(piece)} piece={piece} cell={cell} />
                         )}
                         <div className="contents">
                             {COLUMNS.map(c =>
-                                <div key={c} style={{ gridArea: `r${c}`}} className="text-neutral-400 flex justify-center rounded-lg items-center">{c.toLowerCase()}</div>
+                                <div key={c} style={{ gridArea: `r${c}` }} className="text-neutral-400 flex justify-center rounded-lg items-center">{c.toLowerCase()}</div>
                             )}
                         </div>
                         <div className="contents">
                             {ROWS.map(r =>
-                                <div key={r} style={{ gridArea: `r${r}`}} className="p-2 text-neutral-400 flex justify-center items-center">{r}</div>
+                                <div key={r} style={{ gridArea: `r${r}` }} className="p-2 text-neutral-400 flex justify-center items-center">{r}</div>
                             )}
                         </div>
                     </div>
