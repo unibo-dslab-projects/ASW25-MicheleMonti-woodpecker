@@ -59,6 +59,16 @@ export default function Board() {
                             <Square key={cell} name={cell} color={getCellColor(cell)} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
                         )}
                     </div>
+                    <div className="white-side-subgrid rounded-lg overflow-hidden">
+                        {WHITE_SIDE_CELLS.map(cell =>
+                            <Square key={cell} name={cell} color={"black"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
+                        )}
+                    </div>
+                    <div className="black-side-subgrid rounded-lg overflow-hidden">
+                        {BLACK_SIDE_CELLS.map(cell =>
+                            <Square key={cell} name={cell} color={"white"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
+                        )}
+                    </div>
                     <div className="contents">
                         {[...board].map(([cell, piece]) =>
                             <Piece key={getPieceKey(piece)} piece={piece} cell={cell} />
@@ -73,16 +83,6 @@ export default function Board() {
                                 <div key={r} style={{ gridArea: `r${r}` }} className="p-2 text-neutral-400 flex justify-center items-center">{r}</div>
                             )}
                         </div>
-                    </div>
-                    <div className="white-side-subgrid rounded-lg overflow-hidden">
-                        {WHITE_SIDE_CELLS.map(cell =>
-                            <Square key={cell} name={cell} color={"black"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
-                        )}
-                    </div>
-                    <div className="black-side-subgrid rounded-lg overflow-hidden">
-                        {BLACK_SIDE_CELLS.map(cell =>
-                            <Square key={cell} name={cell} color={"white"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell} />
-                        )}
                     </div>
                 </div>
             </div>
