@@ -109,12 +109,12 @@ export default function Board() {
                     </div>
                     <div className="contents">
                         {COLUMNS.map(c =>
-                            <div key={c} style={{ gridArea: `r${c}`, color: 'gray' }} className="flex justify-center rounded-lg items-center">{c.toLowerCase()}</div>
+                            <div key={c} style={{ gridArea: `r${c}` }} className="text-neutral-400 place-self-center">{c.toLowerCase()}</div>
                         )}
                     </div>
                     <div className="contents">
                         {ROWS.map(r =>
-                            <div key={r} style={{ gridArea: `r${r}`, color: 'gray', padding: '0.5rem' }} className="flex justify-center items-center">{r}</div>
+                            <div key={r} style={{ gridArea: `r${r}` }} className="text-neutral-400 place-self-center">{r}</div>
                         )}
                     </div>
                 </div>
