@@ -22,15 +22,7 @@ export default function Board() {
     const [selectedCell, setSelectedCell] = useState<DeskCell | null>(null);
 
     const gridElement = useRef<HTMLDivElement>(null);
-    const nextKey = useRef(1);
-    const keyMap = useRef(new WeakMap<PieceType, number>());
-    function getPieceKey(piece: PieceType) {
-        if (!keyMap.current.has(piece)) {
-            keyMap.current.set(piece, nextKey.current++);
-        }
-        return keyMap.current.get(piece);
-    }
-
+    
     function onSelectedCell(cell: DeskCell) {
         if (selectedCell) {
             const piece = board.get(selectedCell);
