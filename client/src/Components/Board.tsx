@@ -22,9 +22,11 @@ export default function Board() {
     const [selectedCell, setSelectedCell] = useState<DeskCell | null>(null);
 
     const gridElement = useRef<HTMLDivElement>(null);
-    
+
     function onSelectedCell(cell: DeskCell) {
-        if (selectedCell) {
+        if (selectedCell == cell) {
+            setSelectedCell(null);
+        } else if (selectedCell) {
             const piece = board.get(selectedCell);
             if (!piece)
                 return;
