@@ -2,7 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --white-cell-color: #A89E91;
+    --black-cell-color: #8F867B;
+    --white-piece-color: #F9F1E4;
+    --black-piece-color: #000000;
+    --dark-background-color: #222222;
+}
+
 @layer components {
+    .checkered-background {
+        background-image: conic-gradient(
+            var(--black-cell-color) 90deg,
+            var(--white-cell-color) 90deg 180deg,
+            var(--black-cell-color) 180deg 270deg,
+            var(--white-cell-color) 270deg
+        );
+        background-size: 25% 25%;
+    }
     .desk-grid-area {
         display: grid;
         grid-template:

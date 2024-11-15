@@ -8,13 +8,13 @@ export default {
     extend: {
       colors: {
         white: {
-          cell: '#A89E91',
-          piece: '#F9F1E4'
+          cell: 'var(--white-cell-color)',
+          piece: 'var(--white-piece-color)',
         },
         black: {
-          cell: '#8F867B',
-          piece: '#000000',
-          background: '#222222',
+          cell: 'var(--black-cell-color)',
+          piece: 'var(--black-piece-color)',
+          background: 'var(--dark-background-color)',
         },
       }
     },

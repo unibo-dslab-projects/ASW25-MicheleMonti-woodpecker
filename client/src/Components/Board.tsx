@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { BoardCell, DeskCell, BOARD_CELLS, COLUMNS, PieceColor, PieceType, ROWS, SideCell, WHITE_SIDE_CELLS, BLACK_SIDE_CELLS } from "../defs";
+import { BoardCell, DeskCell, BOARD_CELLS, COLUMNS, PieceType, ROWS, SideCell, WHITE_SIDE_CELLS, BLACK_SIDE_CELLS } from "../defs";
 import Piece from "./Piece";
 import Square from "./Square";
 
@@ -16,12 +16,6 @@ const SIDE_CELLS_MAP = new Map<SideCell, PieceType>([
     ['b1', new PieceType('bishop', 'black')], ['b2', new PieceType('pawn', 'black')], ['b3', new PieceType('knight', 'black')], ['b4', new PieceType('queen', 'black')], ['b5', new PieceType('rook', 'black')], ['b6', new PieceType('king', 'black')],
 ]);
 
-function getCellColor(cell: BoardCell): PieceColor {
-    const column = cell[0];
-    const row = parseInt(cell[1]);
-    const isEvenColumn = 'ACEG'.includes(column);
-    return (isEvenColumn && row % 2 === 0) || (!isEvenColumn && row % 2 !== 0) ? 'white' : 'black';
-}
 
 export default function Board() {
     const [board, setBoard] = useState<Map<DeskCell, PieceType>>(new Map([...DEFAULT_BOARD, ...SIDE_CELLS_MAP]));
@@ -92,23 +86,23 @@ export default function Board() {
         <div className="flex items-center justify-center h-screen bg-black-background">
             <div className="relative">
                 <div ref={gridElement} className="desk-grid-area w-[min(80vh,80vw)]">
-                    <div className="board-subgrid rounded-lg overflow-hidden">
+                    <div className="board-subgrid checkered-background rounded-lg">
                         {BOARD_CELLS.map(cell =>
-                            <Square key={cell} name={cell} color={getCellColor(cell)} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                            <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
                                 <Piece piece={board.get(cell)} />
                             </Square>
                         )}
                     </div>
-                    <div className="white-side-subgrid rounded-lg overflow-hidden">
+                    <div className="white-side-subgrid bg-black-cell rounded-lg">
                         {WHITE_SIDE_CELLS.map(cell =>
-                            <Square key={cell} name={cell} color={"black"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                            <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
                                 <Piece piece={board.get(cell)} />
                             </Square>
                         )}
                     </div>
-                    <div className="black-side-subgrid rounded-lg overflow-hidden">
+                    <div className="black-side-subgrid bg-white-cell rounded-lg">
                         {BLACK_SIDE_CELLS.map(cell =>
-                            <Square key={cell} name={cell} color={"white"} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                            <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
                                 <Piece piece={board.get(cell)} />
                             </Square>
                         )}
