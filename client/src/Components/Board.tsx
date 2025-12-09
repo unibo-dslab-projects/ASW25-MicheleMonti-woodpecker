@@ -222,14 +222,18 @@ export default function Board() {
             {/* Solution panel below the board */}
             <div className="w-full max-w-[min(100vh,100vw)] mt-6">
                 <div 
-                    className={`bg-gray-900 rounded-lg p-4 cursor-pointer transition-all duration-300 ${isSolutionRevealed ? 'ring-2 ring-blue-500' : ''}`}
+                    className={`rounded-lg p-4 cursor-pointer transition-all duration-300 ${isSolutionRevealed ? 'ring-2 ring-blue-500' : ''}`}
+                    style={{ backgroundColor: 'var(--white-cell-color)' }}
                     onClick={() => setIsSolutionRevealed(!isSolutionRevealed)}
                 >
-                    <h3 className="font-bold text-lg mb-3 text-neutral-300">Solution</h3>
+                    <h3 className="font-bold text-lg mb-3 text-neutral-800 text-center">Solution</h3>
                     {isSolutionRevealed ? (
-                        <p className="text-neutral-300 whitespace-pre-line">{solution}</p>
+                        <div 
+                            className="text-neutral-800 whitespace-pre-line"
+                            dangerouslySetInnerHTML={{ __html: solution }}
+                        />
                     ) : (
-                        <div className="text-neutral-500 text-center py-6 text-lg">
+                        <div className="text-neutral-600 text-center py-6 text-lg">
                             Click to reveal the solution
                         </div>
                     )}
