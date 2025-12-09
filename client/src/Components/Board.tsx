@@ -56,15 +56,20 @@ function fenToBoardMap(fen: string): Map<BoardCell, PieceType> {
 
 const boardKeys = Object.keys(woodpeckerBoards);
 const randomIndex = Math.floor(Math.random() * boardKeys.length);
-const boardFromFen = fenToBoardMap(woodpeckerBoards[randomIndex.toString() as keyof typeof woodpeckerBoards].fen);
+const randomBoard = woodpeckerBoards[randomIndex.toString() as keyof typeof woodpeckerBoards];
+const boardFromFen = fenToBoardMap(randomBoard.fen);
 //const boardNumber = randomIndex;
-const initialDirection = woodpeckerBoards[randomIndex.toString() as keyof typeof woodpeckerBoards].direction;
-const boardDescription = `${woodpeckerBoards[randomIndex.toString() as keyof typeof woodpeckerBoards].descr}`;
+const initialDirection = randomBoard.direction;
+const boardDescription = `${randomBoard.descr}`;
+const boardSolution = randomBoard.solution || 'No solution available';
+
 export default function Board() {
     const [description] = useState<string>(boardDescription);
     const [board, setBoard] = useState<Map<DeskCell, PieceType>>(new Map([...boardFromFen, ...SIDE_CELLS_MAP]));
     const [selectedCell, setSelectedCell] = useState<DeskCell | null>(null);
     const [direction] = useState<string>(initialDirection);
+    const [solution] = useState<string>(boardSolution);
+    const [isSolutionRevealed, setIsSolutionRevealed] = useState<boolean>(false);
 
     const gridElement = useRef<HTMLDivElement>(null);
 
@@ -93,11 +98,18 @@ export default function Board() {
             const isSourceSideCell = isSideCell(selectedCell);
             
             if (isDestSideCell) {
+                // Moving TO a side cell - destroy the piece
                 newBoard.delete(selectedCell);
+                // If the piece came from a side cell, replenish it (infinite source)
+                if (isSourceSideCell) {
+                    newBoard.set(selectedCell, new PieceType(piece.type, piece.color));
+                }
             } else {
+                // Moving to a board cell
                 newBoard.set(cell, piece);
                 newBoard.delete(selectedCell);
                 
+                // If the piece came from a side cell, replenish it (infinite source)
                 if (isSourceSideCell) {
                     newBoard.set(selectedCell, new PieceType(piece.type, piece.color));
                 }
@@ -153,7 +165,7 @@ export default function Board() {
     }
     
     return (
-        <div className="flex items-center justify-center h-screen bg-black-background">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
             <div className="relative">
                 <div className="flex items-center justify-center gap-2 mb-4">
                     {/* Direction indicator next to description */}
@@ -204,6 +216,23 @@ export default function Board() {
                             <div key={r} style={{ gridArea: `r${r}` }} className="text-neutral-400 place-self-center">{r}</div>
                         )}
                     </div>
+                </div>
+            </div>
+            
+            {/* Solution panel below the board */}
+            <div className="w-full max-w-[min(100vh,100vw)] mt-6">
+                <div 
+                    className={`bg-gray-900 rounded-lg p-4 cursor-pointer transition-all duration-300 ${isSolutionRevealed ? 'ring-2 ring-blue-500' : ''}`}
+                    onClick={() => setIsSolutionRevealed(!isSolutionRevealed)}
+                >
+                    <h3 className="font-bold text-lg mb-3 text-neutral-300">Solution</h3>
+                    {isSolutionRevealed ? (
+                        <p className="text-neutral-300 whitespace-pre-line">{solution}</p>
+                    ) : (
+                        <div className="text-neutral-500 text-center py-6 text-lg">
+                            Click to reveal the solution
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
