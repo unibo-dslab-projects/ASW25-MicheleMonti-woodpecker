@@ -19,7 +19,7 @@ const SIDE_CELLS_MAP = new Map<SideCell, PieceType>([
 
 function fenToBoardMap(fen: string): Map<BoardCell, PieceType> {
     const boardMap = new Map<BoardCell, PieceType>();
-    const rows = fen.split(' ')[0].split('/');
+    const rows = fen.split('/');
     const pieceMap: { [key: string]: { type: 'king' | 'queen' | 'rook' | 'bishop' | 'knight' | 'pawn', color: 'white' | 'black' } } = {
         'p': { type: 'pawn', color: 'black' },
         'r': { type: 'rook', color: 'black' },
@@ -57,12 +57,14 @@ function fenToBoardMap(fen: string): Map<BoardCell, PieceType> {
 const boardKeys = Object.keys(woodpeckerBoards);
 const randomIndex = Math.floor(Math.random() * boardKeys.length);
 const boardFromFen = fenToBoardMap(woodpeckerBoards[randomIndex.toString() as keyof typeof woodpeckerBoards].fen);
-
-
+//const boardNumber = randomIndex;
+const initialDirection = woodpeckerBoards[randomIndex.toString() as keyof typeof woodpeckerBoards].direction;
+const boardDescription = `${woodpeckerBoards[randomIndex.toString() as keyof typeof woodpeckerBoards].descr}`;
 export default function Board() {
+    const [description] = useState<string>(boardDescription);
     const [board, setBoard] = useState<Map<DeskCell, PieceType>>(new Map([...boardFromFen, ...SIDE_CELLS_MAP]));
-    //const [board, setBoard] = useState<Map<DeskCell, PieceType>>(new Map([...DEFAULT_BOARD, ...SIDE_CELLS_MAP]));
     const [selectedCell, setSelectedCell] = useState<DeskCell | null>(null);
+    const [direction] = useState<string>(initialDirection);
 
     const gridElement = useRef<HTMLDivElement>(null);
 
@@ -118,11 +120,34 @@ export default function Board() {
         }
       }, []);
     
-
+    function isBold(word: string) {
+        if (description[description.split(' ').indexOf(word) + 1] === ',') {
+            return true;
+        };
+        return false;
+    }
+    
     return (
         <div className="flex items-center justify-center h-screen bg-black-background">
             <div className="relative">
-                <div ref={gridElement} className="desk-grid-area w-[min(100vh,100vw)]">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                    {/* Direction indicator next to description */}
+                    <div className="w-5 h-5 rounded border border-gray-700 shadow-sm flex-shrink-0"
+                        style={{
+                            backgroundColor: direction === 'w' ? 'var(--white-piece-color)' : 'var(--black-piece-color)'
+                        }}
+                        title={`Next move: ${direction === 'w' ? 'White' : 'Black'}`}
+                        aria-label={`Next move: ${direction === 'w' ? 'white' : 'black'}`}
+                    />
+                    <div className="text-neutral-400 text-center">
+                        {description.split(' ').map((word, index) => (
+                            <span key={index} className={isBold(word) ? 'font-bold' : ''}>{word} </span>
+                        ))}
+                    </div>
+                </div>
+                
+                <div ref={gridElement} className="desk-grid-area w-[min(100vh,100vw)] p-3">
+                    {/* Rest of your board code remains the same */}
                     <div className="board-subgrid checkered-background rounded-lg">
                         {BOARD_CELLS.map(cell =>
                             <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
