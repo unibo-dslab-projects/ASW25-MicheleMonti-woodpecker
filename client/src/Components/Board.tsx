@@ -68,6 +68,18 @@ export default function Board() {
 
     const gridElement = useRef<HTMLDivElement>(null);
 
+    function isWhiteSideCell(cell: DeskCell): cell is typeof WHITE_SIDE_CELLS[number] {
+        return WHITE_SIDE_CELLS.includes(cell as any);
+    }
+
+    function isBlackSideCell(cell: DeskCell): cell is typeof BLACK_SIDE_CELLS[number] {
+        return BLACK_SIDE_CELLS.includes(cell as any);
+    }
+
+    function isSideCell(cell: DeskCell): boolean {
+        return isWhiteSideCell(cell) || isBlackSideCell(cell);
+    }
+
     function onSelectedCell(cell: DeskCell) {
         if (selectedCell == cell) {
             setSelectedCell(null);
@@ -75,9 +87,22 @@ export default function Board() {
             const piece = board.get(selectedCell);
             if (!piece)
                 return;
+                
             const newBoard = new Map(board);
-            newBoard.set(cell, piece);
-            newBoard.delete(selectedCell);
+            const isDestSideCell = isSideCell(cell);
+            const isSourceSideCell = isSideCell(selectedCell);
+            
+            if (isDestSideCell) {
+                newBoard.delete(selectedCell);
+            } else {
+                newBoard.set(cell, piece);
+                newBoard.delete(selectedCell);
+                
+                if (isSourceSideCell) {
+                    newBoard.set(selectedCell, new PieceType(piece.type, piece.color));
+                }
+            }
+            
             setBoard(newBoard);
             setSelectedCell(null);
         } else if (board.has(cell)) {
