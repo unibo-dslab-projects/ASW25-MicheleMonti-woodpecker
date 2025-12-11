@@ -54,21 +54,28 @@ function fenToBoardMap(fen: string): Map<BoardCell, PieceType> {
     return boardMap;
 }
 
-const boardKeys = Object.keys(woodpeckerBoards);
-const randomIndex = Math.floor(Math.random() * boardKeys.length);
-const randomBoard = woodpeckerBoards[randomIndex.toString() as keyof typeof woodpeckerBoards];
-const boardFromFen = fenToBoardMap(randomBoard.fen);
-//const boardNumber = randomIndex;
-const initialDirection = randomBoard.direction;
-const boardDescription = `${randomBoard.descr}`;
-const boardSolution = randomBoard.solution || 'No solution available';
+function getRandomBoard() {
+    const boardKeys = Object.keys(woodpeckerBoards);
+    const randomIndex = Math.floor(Math.random() * boardKeys.length);
+    const randomBoard = woodpeckerBoards[randomIndex.toString() as keyof typeof woodpeckerBoards];
+    return {
+        board: randomBoard,
+        index: randomIndex,
+        boardFromFen: fenToBoardMap(randomBoard.fen),
+        direction: randomBoard.direction,
+        description: randomBoard.descr,
+        solution: randomBoard.solution || 'No solution available'
+    };
+}
 
 export default function Board() {
-    const [description] = useState<string>(boardDescription);
-    const [board, setBoard] = useState<Map<DeskCell, PieceType>>(new Map([...boardFromFen, ...SIDE_CELLS_MAP]));
+    const [puzzleData, setPuzzleData] = useState(() => getRandomBoard());
+    
+    const [description, setDescription] = useState<string>(puzzleData.description);
+    const [board, setBoard] = useState<Map<DeskCell, PieceType>>(new Map([...puzzleData.boardFromFen, ...SIDE_CELLS_MAP]));
     const [selectedCell, setSelectedCell] = useState<DeskCell | null>(null);
-    const [direction] = useState<string>(initialDirection);
-    const [solution] = useState<string>(boardSolution);
+    const [direction, setDirection] = useState<string>(puzzleData.direction);
+    const [solution, setSolution] = useState<string>(puzzleData.solution);
     const [isSolutionRevealed, setIsSolutionRevealed] = useState<boolean>(false);
 
     const gridElement = useRef<HTMLDivElement>(null);
@@ -108,6 +115,17 @@ export default function Board() {
         } else if (board.has(cell)) {
             setSelectedCell(cell);
         }
+    }
+    
+    function loadNewPuzzle() {
+        const newPuzzleData = getRandomBoard();
+        setPuzzleData(newPuzzleData);
+        setDescription(newPuzzleData.description);
+        setBoard(new Map([...newPuzzleData.boardFromFen, ...SIDE_CELLS_MAP]));
+        setDirection(newPuzzleData.direction);
+        setSolution(newPuzzleData.solution);
+        setSelectedCell(null);
+        setIsSolutionRevealed(false);
     }
     
     useEffect(() => {
@@ -154,75 +172,90 @@ export default function Board() {
     
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
-            <div className="relative">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                    <div className="w-5 h-5 rounded border border-gray-700 shadow-sm flex-shrink-0"
-                        style={{
-                            backgroundColor: direction === 'w' ? 'var(--white-piece-color)' : 'var(--black-piece-color)'
-                        }}
-                        title={`Next move: ${direction === 'w' ? 'White' : 'Black'}`}
-                        aria-label={`Next move: ${direction === 'w' ? 'white' : 'black'}`}
-                    />
-                    <div className="text-neutral-400 text-center">
-                        {description.split(' ').map((word, index) => (
-                            <span key={index} className={isBold(word) ? 'font-bold' : ''}>{word} </span>
-                        ))}
-                    </div>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 w-full">
+                <div 
+                    className="order-2 md:order-1 rounded-lg p-4 mb-4 md:mb-0"
+                    style={{ backgroundColor: 'var(--white-cell-color)' }}
+                >
+                    <button 
+                        onClick={loadNewPuzzle}
+                        className="px-4 py-2 text-black rounded-lg transition-colors whitespace-nowrap hover:opacity-90 w-full"
+                        style={{ backgroundColor: 'var(--black-cell-color)' }}
+                        title="Load a new random puzzle"
+                    >
+                        Next Puzzle
+                    </button>
                 </div>
                 
-                <div ref={gridElement} className="desk-grid-area w-[min(100vh,100vw)] p-3">
-                    <div className="board-subgrid checkered-background rounded-lg">
-                        {BOARD_CELLS.map(cell =>
-                            <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
-                                <Piece piece={board.get(cell)} />
-                            </Square>
-                        )}
+                <div className="order-1 md:order-2 relative">
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                        <div className="w-5 h-5 rounded border border-gray-700 shadow-sm flex-shrink-0"
+                            style={{
+                                backgroundColor: direction === 'w' ? 'var(--white-piece-color)' : 'var(--black-piece-color)'
+                            }}
+                            title={`Next move: ${direction === 'w' ? 'White' : 'Black'}`}
+                            aria-label={`Next move: ${direction === 'w' ? 'white' : 'black'}`}
+                        />
+                        <div className="text-neutral-400 text-center">
+                            {description.split(' ').map((word, index) => (
+                                <span key={index} className={isBold(word) ? 'font-bold' : ''}>{word} </span>
+                            ))}
+                        </div>
                     </div>
-                    <div className="white-side-subgrid bg-black-cell rounded-lg">
-                        {WHITE_SIDE_CELLS.map(cell =>
-                            <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
-                                <Piece piece={board.get(cell)} />
-                            </Square>
-                        )}
-                    </div>
-                    <div className="black-side-subgrid bg-white-cell rounded-lg">
-                        {BLACK_SIDE_CELLS.map(cell =>
-                            <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
-                                <Piece piece={board.get(cell)} />
-                            </Square>
-                        )}
-                    </div>
-                    <div className="contents">
-                        {COLUMNS.map(c =>
-                            <div key={c} style={{ gridArea: `r${c}` }} className="text-neutral-400 place-self-center">{c.toLowerCase()}</div>
-                        )}
-                    </div>
-                    <div className="contents">
-                        {ROWS.map(r =>
-                            <div key={r} style={{ gridArea: `r${r}` }} className="text-neutral-400 place-self-center">{r}</div>
-                        )}
+                    
+                    <div ref={gridElement} className="desk-grid-area w-[min(100vh,100vw)] p-3">
+                        <div className="board-subgrid checkered-background rounded-lg">
+                            {BOARD_CELLS.map(cell =>
+                                <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                    <Piece piece={board.get(cell)} />
+                                </Square>
+                            )}
+                        </div>
+                        <div className="white-side-subgrid bg-black-cell rounded-lg">
+                            {WHITE_SIDE_CELLS.map(cell =>
+                                <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                    <Piece piece={board.get(cell)} />
+                                </Square>
+                            )}
+                        </div>
+                        <div className="black-side-subgrid bg-white-cell rounded-lg">
+                            {BLACK_SIDE_CELLS.map(cell =>
+                                <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                    <Piece piece={board.get(cell)} />
+                                </Square>
+                            )}
+                        </div>
+                        <div className="contents">
+                            {COLUMNS.map(c =>
+                                <div key={c} style={{ gridArea: `r${c}` }} className="text-neutral-400 place-self-center">{c.toLowerCase()}</div>
+                            )}
+                        </div>
+                        <div className="contents">
+                            {ROWS.map(r =>
+                                <div key={r} style={{ gridArea: `r${r}` }} className="text-neutral-400 place-self-center">{r}</div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
             
-            {/* Solution panel below the board */}
-            <div className="w-full max-w-[min(100vh,100vw)] mt-6">
-                <div 
-                    className={`rounded-lg p-4 cursor-pointer transition-all duration-300 ${isSolutionRevealed ? 'ring-2 ring-blue-500' : ''}`}
-                    style={{ backgroundColor: 'var(--white-cell-color)' }}
-                    onClick={() => setIsSolutionRevealed(!isSolutionRevealed)}
-                >
+            <div className="w-full max-w-[min(100vh,100vw)] mt-6">        
+                    <div 
+                        className={`rounded-lg p-4 cursor-pointer transition-all duration-300`}
+                        style={{ backgroundColor: 'var(--white-cell-color)' }}
+                        onClick={() => setIsSolutionRevealed(!isSolutionRevealed)}
+                    >
                     <h3 className="font-bold text-lg mb-3 text-neutral-800 text-center">Solution</h3>
-                    {isSolutionRevealed ? (
+                        {isSolutionRevealed ? (
                         <div 
                             className="text-neutral-800 whitespace-pre-line"
                             dangerouslySetInnerHTML={{ __html: solution }}
                         />
-                    ) : (
+                        ) : (
                         <div className="text-neutral-600 text-center py-6 text-lg">
-                            Click to reveal the solution
-                        </div>
-                    )}
+                                Click to reveal the solution
+                            </div>
+                        )}
                 </div>
             </div>
         </div>
