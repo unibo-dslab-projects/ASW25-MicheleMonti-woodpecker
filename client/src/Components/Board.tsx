@@ -73,16 +73,8 @@ export default function Board() {
 
     const gridElement = useRef<HTMLDivElement>(null);
 
-    function isWhiteSideCell(cell: DeskCell): cell is typeof WHITE_SIDE_CELLS[number] {
-        return WHITE_SIDE_CELLS.includes(cell as any);
-    }
-
-    function isBlackSideCell(cell: DeskCell): cell is typeof BLACK_SIDE_CELLS[number] {
-        return BLACK_SIDE_CELLS.includes(cell as any);
-    }
-
     function isSideCell(cell: DeskCell): boolean {
-        return isWhiteSideCell(cell) || isBlackSideCell(cell);
+        return WHITE_SIDE_CELLS.includes(cell as typeof WHITE_SIDE_CELLS[number]) || BLACK_SIDE_CELLS.includes(cell as typeof BLACK_SIDE_CELLS[number]);
     }
 
     function onSelectedCell(cell: DeskCell) {
@@ -98,18 +90,14 @@ export default function Board() {
             const isSourceSideCell = isSideCell(selectedCell);
             
             if (isDestSideCell) {
-                // Moving TO a side cell - destroy the piece
                 newBoard.delete(selectedCell);
-                // If the piece came from a side cell, replenish it (infinite source)
                 if (isSourceSideCell) {
                     newBoard.set(selectedCell, new PieceType(piece.type, piece.color));
                 }
             } else {
-                // Moving to a board cell
                 newBoard.set(cell, piece);
                 newBoard.delete(selectedCell);
                 
-                // If the piece came from a side cell, replenish it (infinite source)
                 if (isSourceSideCell) {
                     newBoard.set(selectedCell, new PieceType(piece.type, piece.color));
                 }
@@ -168,7 +156,6 @@ export default function Board() {
         <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
             <div className="relative">
                 <div className="flex items-center justify-center gap-2 mb-4">
-                    {/* Direction indicator next to description */}
                     <div className="w-5 h-5 rounded border border-gray-700 shadow-sm flex-shrink-0"
                         style={{
                             backgroundColor: direction === 'w' ? 'var(--white-piece-color)' : 'var(--black-piece-color)'
@@ -184,7 +171,6 @@ export default function Board() {
                 </div>
                 
                 <div ref={gridElement} className="desk-grid-area w-[min(100vh,100vw)] p-3">
-                    {/* Rest of your board code remains the same */}
                     <div className="board-subgrid checkered-background rounded-lg">
                         {BOARD_CELLS.map(cell =>
                             <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
