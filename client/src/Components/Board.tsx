@@ -77,7 +77,8 @@ export default function Board() {
     const [direction, setDirection] = useState<string>(puzzleData.direction);
     const [solution, setSolution] = useState<string>(puzzleData.solution);
     const [isSolutionRevealed, setIsSolutionRevealed] = useState<boolean>(false);
-
+    const [puzzleIndex, setPuzzleIndex] = useState<number>(puzzleData.index);
+    
     const gridElement = useRef<HTMLDivElement>(null);
 
     function isSideCell(cell: DeskCell): boolean {
@@ -126,6 +127,7 @@ export default function Board() {
         setSolution(newPuzzleData.solution);
         setSelectedCell(null);
         setIsSolutionRevealed(false);
+        setPuzzleIndex(newPuzzleData.index);
     }
     
     useEffect(() => {
@@ -197,6 +199,7 @@ export default function Board() {
                             aria-label={`Next move: ${direction === 'w' ? 'white' : 'black'}`}
                         />
                         <div className="text-neutral-400 text-center">
+                            <span className="font-bold">#{puzzleIndex}</span>{' '}
                             {description.split(' ').map((word, index) => (
                                 <span key={index} className={isBold(word) ? 'font-bold' : ''}>{word} </span>
                             ))}
