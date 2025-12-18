@@ -54,10 +54,18 @@ function fenToBoardMap(fen: string): Map<BoardCell, PieceType> {
     return boardMap;
 }
 
-function getRandomBoard() {
-    const boardKeys = Object.keys(woodpeckerBoards);
-    const randomIndex = Math.floor(Math.random() * boardKeys.length);
+const DIFFICULTY_RANGES = {
+    easy: { min: 1, max: 222 },
+    medium: { min: 223, max: 984 },
+    hard: { min: 985, max: 1128 }
+};
+
+function getRandomBoard(difficulty: 'easy' | 'medium' | 'hard' = 'easy') {
+    const range = DIFFICULTY_RANGES[difficulty];
+    
+    const randomIndex = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
     const randomBoard = woodpeckerBoards[randomIndex.toString() as keyof typeof woodpeckerBoards];
+    
     return {
         board: randomBoard,
         index: randomIndex,
@@ -69,7 +77,8 @@ function getRandomBoard() {
 }
 
 export default function Board() {
-    const [puzzleData, setPuzzleData] = useState(() => getRandomBoard());
+    const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
+    const [puzzleData, setPuzzleData] = useState(() => getRandomBoard(difficulty));
     
     const [description, setDescription] = useState<string>(puzzleData.description);
     const [board, setBoard] = useState<Map<DeskCell, PieceType>>(new Map([...puzzleData.boardFromFen, ...SIDE_CELLS_MAP]));
@@ -119,7 +128,7 @@ export default function Board() {
     }
     
     function loadNewPuzzle() {
-        const newPuzzleData = getRandomBoard();
+        const newPuzzleData = getRandomBoard(difficulty);
         setPuzzleData(newPuzzleData);
         setDescription(newPuzzleData.description);
         setBoard(new Map([...newPuzzleData.boardFromFen, ...SIDE_CELLS_MAP]));
@@ -135,6 +144,12 @@ export default function Board() {
         setSelectedCell(null);
         setIsSolutionRevealed(false);
     }
+    
+    const getCurrentDifficulty = () => {
+        if (puzzleIndex >= 1 && puzzleIndex <= 222) return 'easy';
+        if (puzzleIndex >= 223 && puzzleIndex <= 984) return 'medium';
+        return 'hard';
+    };
     
     useEffect(() => {
         function callback(mutations: MutationRecord[]) {
@@ -185,6 +200,36 @@ export default function Board() {
                     className="order-2 md:order-1 rounded-lg p-4 mb-4 md:mb-0 flex flex-col gap-3"
                     style={{ backgroundColor: 'var(--white-cell-color)' }}
                 >
+                    <div className="mb-2">
+                        <h3 className="font-bold text-lg text-center mb-2 text-neutral-800">Difficulty</h3>
+                        
+                        <div className="flex rounded-lg overflow-hidden border-2 border-gray-700 shadow-sm">
+                            {(['easy', 'medium', 'hard'] as const).map((level, index) => (
+                                <button
+                                    key={level}
+                                    onClick={() => setDifficulty(level)}
+                                    className={`flex-1 px-3 py-2 text-center transition-all duration-200 ${
+                                        difficulty === level 
+                                            ? 'text-black font-medium' 
+                                            : 'text-neutral-700 hover:text-black'
+                                    } ${index !== 2 ? 'border-r border-gray-700' : ''}`}
+                                    style={{ 
+                                        backgroundColor: difficulty === level 
+                                            ? 'var(--white-cell-color)' 
+                                            : 'var(--black-cell-color)'
+                                    }}
+                                >
+                                    <span className="capitalize">{level}</span>
+                                </button>
+                            ))}
+                        </div>
+                        
+                        {/* Range indicator below the curtain selector */}
+                        <div className="text-xs text-center mt-1 text-neutral-600">
+                            {DIFFICULTY_RANGES[difficulty].min}-{DIFFICULTY_RANGES[difficulty].max}
+                        </div>
+                    </div>
+                    
                     <button 
                         onClick={restartPuzzle}
                         className="px-4 py-2 text-black rounded-lg transition-colors whitespace-nowrap hover:opacity-90 w-full"
@@ -215,6 +260,10 @@ export default function Board() {
                         />
                         <div className="text-neutral-400 text-center">
                             <span className="font-bold">#{puzzleIndex}</span>{' '}
+                            <span className="text-sm px-2 py-1 rounded bg-gray-800 ml-2 capitalize">
+                                {getCurrentDifficulty()}
+                            </span>
+                            {' '}
                             {description.split(' ').map((word, index) => (
                                 <span key={index} className={isBold(word) ? 'font-bold' : ''}>{word} </span>
                             ))}
