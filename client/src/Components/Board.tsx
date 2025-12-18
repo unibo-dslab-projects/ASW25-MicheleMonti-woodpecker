@@ -130,6 +130,12 @@ export default function Board() {
         setPuzzleIndex(newPuzzleData.index);
     }
     
+    function restartPuzzle() {
+        setBoard(new Map([...puzzleData.boardFromFen, ...SIDE_CELLS_MAP]));
+        setSelectedCell(null);
+        setIsSolutionRevealed(false);
+    }
+    
     useEffect(() => {
         function callback(mutations: MutationRecord[]) {
             let from = null;
@@ -176,9 +182,18 @@ export default function Board() {
         <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 w-full">
                 <div 
-                    className="order-2 md:order-1 rounded-lg p-4 mb-4 md:mb-0"
+                    className="order-2 md:order-1 rounded-lg p-4 mb-4 md:mb-0 flex flex-col gap-3"
                     style={{ backgroundColor: 'var(--white-cell-color)' }}
                 >
+                    <button 
+                        onClick={restartPuzzle}
+                        className="px-4 py-2 text-black rounded-lg transition-colors whitespace-nowrap hover:opacity-90 w-full"
+                        style={{ backgroundColor: 'var(--black-cell-color)' }}
+                        title="Reset current puzzle to starting position"
+                    >
+                        Restart Puzzle
+                    </button>
+                    
                     <button 
                         onClick={loadNewPuzzle}
                         className="px-4 py-2 text-black rounded-lg transition-colors whitespace-nowrap hover:opacity-90 w-full"
@@ -243,22 +258,22 @@ export default function Board() {
             </div>
             
             <div className="w-full max-w-[min(100vh,100vw)] mt-6">        
-                    <div 
-                        className={`rounded-lg p-4 cursor-pointer transition-all duration-300`}
-                        style={{ backgroundColor: 'var(--white-cell-color)' }}
-                        onClick={() => setIsSolutionRevealed(!isSolutionRevealed)}
-                    >
+                <div 
+                    className={`rounded-lg p-4 cursor-pointer transition-all duration-300`}
+                    style={{ backgroundColor: 'var(--white-cell-color)' }}
+                    onClick={() => setIsSolutionRevealed(!isSolutionRevealed)}
+                >
                     <h3 className="font-bold text-lg mb-3 text-neutral-800 text-center">Solution</h3>
-                        {isSolutionRevealed ? (
+                    {isSolutionRevealed ? (
                         <div 
                             className="text-neutral-800 whitespace-pre-line"
                             dangerouslySetInnerHTML={{ __html: solution }}
                         />
-                        ) : (
+                    ) : (
                         <div className="text-neutral-600 text-center py-6 text-lg">
-                                Click to reveal the solution
-                            </div>
-                        )}
+                            Click to reveal the solution
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
