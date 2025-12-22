@@ -99,25 +99,21 @@ export default function Board() {
             setSelectedCell(null);
         } else if (selectedCell) {
             const piece = board.get(selectedCell);
-            if (!piece)
-                return;
-                
-            const newBoard = new Map(board);
+            if (!piece) return;
+            
+            const destPiece = board.get(cell);
             const isDestSideCell = isSideCell(cell);
             const isSourceSideCell = isSideCell(selectedCell);
             
-            if (isDestSideCell) {
-                newBoard.delete(selectedCell);
-                if (isSourceSideCell) {
-                    newBoard.set(selectedCell, new PieceType(piece.type, piece.color));
-                }
-            } else {
-                newBoard.set(cell, piece);
-                newBoard.delete(selectedCell);
-                
-                if (isSourceSideCell) {
-                    newBoard.set(selectedCell, new PieceType(piece.type, piece.color));
-                }
+            const newBoard = new Map(board);
+            
+            newBoard.delete(selectedCell);
+            
+            if (!isDestSideCell) {newBoard.set(cell, piece);}
+            if (isSourceSideCell) {newBoard.set(selectedCell, new PieceType(piece.type, piece.color));}
+            if ((isSourceSideCell && isDestSideCell) || (!isDestSideCell && destPiece && destPiece.color === piece.color)) {
+                setSelectedCell(cell);
+                return;
             }
             
             setBoard(newBoard);
@@ -195,6 +191,27 @@ export default function Board() {
     
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
+            {/* Description centered above everything */}
+            <div className="flex items-center justify-center gap-2 mb-6 w-full">
+                <div className="w-5 h-5 rounded border border-gray-700 shadow-sm flex-shrink-0"
+                    style={{
+                        backgroundColor: direction === 'w' ? 'var(--white-piece-color)' : 'var(--black-piece-color)'
+                    }}
+                    title={`Next move: ${direction === 'w' ? 'White' : 'Black'}`}
+                    aria-label={`Next move: ${direction === 'w' ? 'white' : 'black'}`}
+                />
+                <div className="text-neutral-400 text-center">
+                    <span className="font-bold">#{puzzleIndex}</span>{' '}
+                    <span className="text-sm px-2 py-1 rounded bg-gray-800 ml-2 capitalize">
+                        {getCurrentDifficulty()}
+                    </span>
+                    {' '}
+                    {description.split(' ').map((word, index) => (
+                        <span key={index} className={isBold(word) ? 'font-bold' : ''}>{word} </span>
+                    ))}
+                </div>
+            </div>
+            
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 w-full">
                 <div 
                     className="order-2 md:order-1 rounded-lg p-4 mb-4 md:mb-0 flex flex-col gap-3"
@@ -264,26 +281,6 @@ export default function Board() {
                 </div>
                 
                 <div className="order-1 md:order-2 relative">
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                        <div className="w-5 h-5 rounded border border-gray-700 shadow-sm flex-shrink-0"
-                            style={{
-                                backgroundColor: direction === 'w' ? 'var(--white-piece-color)' : 'var(--black-piece-color)'
-                            }}
-                            title={`Next move: ${direction === 'w' ? 'White' : 'Black'}`}
-                            aria-label={`Next move: ${direction === 'w' ? 'white' : 'black'}`}
-                        />
-                        <div className="text-neutral-400 text-center">
-                            <span className="font-bold">#{puzzleIndex}</span>{' '}
-                            <span className="text-sm px-2 py-1 rounded bg-gray-800 ml-2 capitalize">
-                                {getCurrentDifficulty()}
-                            </span>
-                            {' '}
-                            {description.split(' ').map((word, index) => (
-                                <span key={index} className={isBold(word) ? 'font-bold' : ''}>{word} </span>
-                            ))}
-                        </div>
-                    </div>
-                    
                     <div ref={gridElement} className="desk-grid-area w-[min(100vh,100vw)] p-3">
                         <div className="board-subgrid checkered-background rounded-lg">
                             {BOARD_CELLS.map(cell =>
