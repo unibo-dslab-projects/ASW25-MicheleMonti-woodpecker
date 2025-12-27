@@ -4,7 +4,7 @@ export default function Square({name, onClick, isSelected, children}: {name: Des
     return <button 
         style={{gridArea: name}}
         onClick={onClick}
-        className={`aspect-square ${isSelected && 'ring-4 ring-blue-500 ring-inset'}`}
+        className={`aspect-square ${isSelected && 'ring-4 ring-green-600 ring-inset'}`}
     >
         {children}
     </button>;
