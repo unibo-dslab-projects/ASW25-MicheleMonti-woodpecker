@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { BoardCell, DeskCell, BOARD_CELLS, COLUMNS, PieceType, ROWS, SideCell, WHITE_SIDE_CELLS, BLACK_SIDE_CELLS } from "../defs";
+import { Difficulty, DIFFICULTY_RANGES } from "./constants";
 import Piece from "./Piece";
 import Square from "./Square";
+import DifficultySelector from './DifficultySelector';
+import PuzzleDescription from './PuzzleDescription';
 
 const SIDE_CELLS_MAP = new Map<SideCell, PieceType>([
     ['w1', new PieceType('rook', 'white')], ['w2', new PieceType('king', 'white')], ['w3', new PieceType('knight', 'white')], ['w4', new PieceType('queen', 'white')], ['w5', new PieceType('bishop', 'white')], ['w6', new PieceType('pawn', 'white')],
@@ -48,14 +51,8 @@ function fenToBoardMap(fen: string): Map<BoardCell, PieceType> {
     return boardMap;
 }
 
-const DIFFICULTY_RANGES = {
-    easy: { min: 1, max: 222 },
-    medium: { min: 223, max: 984 },
-    hard: { min: 985, max: 1128 }
-};
-
 // Fetch random puzzle from API
-async function getRandomBoardFromAPI(difficulty: 'easy' | 'medium' | 'hard' = 'easy'): Promise<{
+async function getRandomBoardFromAPI(difficulty: Difficulty = 'easy'): Promise<{
     board: any,
     index: number,
     boardFromFen: Map<BoardCell, PieceType>,
@@ -95,7 +92,7 @@ async function getRandomBoardFromAPI(difficulty: 'easy' | 'medium' | 'hard' = 'e
 }
 
 // Fallback function in case API is down
-function getFallbackBoard(difficulty: 'easy' | 'medium' | 'hard' = 'easy') {
+function getFallbackBoard(difficulty: Difficulty = 'easy') {
     const range = DIFFICULTY_RANGES[difficulty];
     const randomIndex = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
     
@@ -111,7 +108,7 @@ function getFallbackBoard(difficulty: 'easy' | 'medium' | 'hard' = 'easy') {
 }
 
 export default function Board() {
-    const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
+    const [difficulty, setDifficulty] = useState<Difficulty>('easy');
     const [puzzleData, setPuzzleData] = useState<{
         board: any,
         index: number,
@@ -121,10 +118,10 @@ export default function Board() {
         solution: string
     } | null>(null);
     
-    const [description, setDescription] = useState<string>('');
     const [board, setBoard] = useState<Map<DeskCell, PieceType>>(new Map([...SIDE_CELLS_MAP]));
     const [selectedCell, setSelectedCell] = useState<DeskCell | null>(null);
     const [direction, setDirection] = useState<string>('w');
+    const [description, setDescription] = useState<string>('');
     const [solution, setSolution] = useState<string>('');
     const [isSolutionRevealed, setIsSolutionRevealed] = useState<boolean>(false);
     const [puzzleIndex, setPuzzleIndex] = useState<number>(0);
@@ -196,7 +193,7 @@ export default function Board() {
         }
     }
     
-    const getCurrentDifficulty = () => {
+    const getCurrentDifficulty = (): Difficulty => {
         if (puzzleIndex >= 1 && puzzleIndex <= 222) return 'easy';
         if (puzzleIndex >= 223 && puzzleIndex <= 984) return 'medium';
         return 'hard';
@@ -242,13 +239,6 @@ export default function Board() {
         }
       }, []);
     
-    function isBold(word: string) {
-        if (description[description.split(' ').indexOf(word) + 1] === ',') {
-            return true;
-        };
-        return false;
-    }
-    
     if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
@@ -273,85 +263,23 @@ export default function Board() {
     
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
-            {/* Description centered above everything */}
-            <div className="flex items-center justify-center gap-2 mb-6 w-full">
-                <div className="w-5 h-5 rounded border border-gray-700 shadow-sm flex-shrink-0"
-                    style={{
-                        backgroundColor: direction === 'w' ? 'var(--white-piece-color)' : 'var(--black-piece-color)'
-                    }}
-                    title={`Next move: ${direction === 'w' ? 'White' : 'Black'}`}
-                    aria-label={`Next move: ${direction === 'w' ? 'white' : 'black'}`}
-                />
-                <div className="text-neutral-400 text-center">
-                    <span className="font-bold">#{puzzleIndex}</span>{' '}
-                    <span className="text-sm px-2 py-1 rounded bg-gray-800 ml-2 capitalize">
-                        {getCurrentDifficulty()}
-                    </span>
-                    {' '}
-                    {description.split(' ').map((word, index) => (
-                        <span key={index} className={isBold(word) ? 'font-bold' : ''}>{word} </span>
-                    ))}
-                </div>
-            </div>
+            {/* Description component */}
+            <PuzzleDescription 
+                puzzleIndex={puzzleIndex}
+                difficulty={getCurrentDifficulty()}
+                direction={direction}
+                description={description}
+            />
             
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 w-full">
                 <div 
                     className="order-2 md:order-1 rounded-lg p-4 mb-4 md:mb-0 flex flex-col gap-3"
                     style={{ backgroundColor: 'var(--white-cell-color)' }}
                 >
-                    <div className="mb-2">
-                        <h3 className="font-bold text-lg text-center mb-2 text-neutral-800">Difficulty</h3>
-                        
-                        <div className="relative">
-                            <div 
-                                className="flex rounded-lg overflow-hidden border-2 border-gray-700 shadow-sm relative z-0"
-                                style={{ backgroundColor: 'var(--black-cell-color)' }}
-                            >
-                                {(['easy', 'medium', 'hard'] as const).map((level) => {
-                                    const isActive = difficulty === level;
-                                    const getActiveColor = () => {
-                                        if (!isActive) return '';
-                                        switch(level) {
-                                            case 'easy': return 'text-green-600';
-                                            case 'medium': return 'text-yellow-400';
-                                            case 'hard': return 'text-red-600';
-                                            default: return '';
-                                        }
-                                    };
-                                    
-                                    return (
-                                        <button
-                                            key={level}
-                                            onClick={() => setDifficulty(level)}
-                                            className={`flex-1 px-3 py-2 text-center relative z-10 transition-colors duration-200 ${
-                                                isActive 
-                                                    ? `font-medium ${getActiveColor()}` 
-                                                    : 'text-neutral-300 hover:text-white'
-                                            }`}
-                                            aria-label={`Set difficulty to ${level}`}
-                                        >
-                                            <span className="capitalize relative z-20">{level}</span>
-                                        </button>
-                                    );
-                                })}
-                                
-                                {/* Animated slider background - make it visible with a contrasting color */}
-                                <div 
-                                    className="absolute top-0 left-0 h-full slider-spring rounded-md"
-                                    style={{ 
-                                        width: '33.333%',
-                                        backgroundColor: 'var(--white-cell-color)',
-                                        transform: `translateX(${difficulty === 'easy' ? '0%' : difficulty === 'medium' ? '100%' : '200%'})`
-                                    }}
-                                />
-                            </div>
-                            
-                            {/* Range indicator below the slider */}
-                            <div className="text-xs text-center mt-1 text-neutral-600">
-                                {DIFFICULTY_RANGES[difficulty].min}-{DIFFICULTY_RANGES[difficulty].max}
-                            </div>
-                        </div>
-                    </div>
+                    <DifficultySelector 
+                        difficulty={difficulty}
+                        setDifficulty={setDifficulty}
+                    />
                     
                     <button 
                         onClick={restartPuzzle}

@@ -5,26 +5,21 @@ require('dotenv').config();
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://MontiMic:RavuNL0YhiNxHuQx@cluster0.guvyxky.mongodb.net/woodpecker_boards?retryWrites=true&w=majority';
 
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB Atlas'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+  .then(() => console.log('Connected to MongoDB Atlas'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
-// Puzzle Schema - using strict: false to accept dynamic keys
 const puzzleSchema = new mongoose.Schema({}, { strict: false, collection: 'puzzles' });
 const Puzzle = mongoose.model('Puzzle', puzzleSchema);
 
-// Helper function to extract puzzles from the single document
 function extractPuzzlesFromDocument(doc) {
   const puzzles = [];
   
-  // Loop through all keys except _id
   for (const key in doc) {
     if (key !== '_id' && key !== '__v') {
       const puzzleData = doc[key];
@@ -45,7 +40,6 @@ function extractPuzzlesFromDocument(doc) {
   return puzzles.sort((a, b) => a.puzzle_id - b.puzzle_id);
 }
 
-// API Routes
 app.get('/api/puzzles', async (req, res) => {
   try {
     const doc = await Puzzle.findOne();
@@ -133,13 +127,11 @@ app.get('/api/puzzles/random/:difficulty', async (req, res) => {
       return res.status(404).json({ error: `No ${difficulty} puzzles found` });
     }
     
-    // Pick random puzzle
     const randomIndex = Math.floor(Math.random() * puzzlesInRange.length);
     const randomPuzzle = puzzlesInRange[randomIndex];
     
     console.log(`[API] Returning puzzle ID: ${randomPuzzle.puzzle_id}`);
     
-    // Ensure solution field exists
     const response = {
       puzzle_id: randomPuzzle.puzzle_id,
       descr: randomPuzzle.descr,
@@ -197,5 +189,5 @@ app.get('/api/puzzles/range/:min/:max', async (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
