@@ -71,7 +71,6 @@ async function getRandomBoardFromAPI(difficulty: Difficulty = 'easy'): Promise<{
         try {
             fen = decodeURIComponent(fen);
         } catch (e) {
-
         }
         
         return {
@@ -271,7 +270,7 @@ export default function Board() {
                     
                     <button 
                         onClick={restartPuzzle}
-                        className="px-4 py-2 text-black rounded-lg transition-all whitespace-nowrap hover:opacity-90 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-black rounded-lg transition-all whitespace-nowrap hover:opacity-90 w-full"
                         style={{ backgroundColor: 'var(--black-cell-color)' }}
                         title="Reset current puzzle to starting position"
                     >
@@ -280,7 +279,7 @@ export default function Board() {
                     
                     <button 
                         onClick={loadNewPuzzle}
-                        className="px-4 py-2 text-black rounded-lg transition-all whitespace-nowrap hover:opacity-90 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 text-black rounded-lg transition-all whitespace-nowrap hover:opacity-90 w-full"
                         style={{ backgroundColor: 'var(--black-cell-color)' }}
                         title="Load a new random puzzle"
                     >
@@ -290,38 +289,36 @@ export default function Board() {
                 
                 <div className="order-1 md:order-2 relative">
                     <div ref={gridElement} className="desk-grid-area w-[min(100vh,100vw)] p-3">
-                        <div ref={gridElement} className="desk-grid-area w-[min(100vh,100vw)] p-3">
-                            <div className="board-subgrid checkered-background rounded-lg">
-                                {BOARD_CELLS.map(cell =>
-                                    <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
-                                        <Piece piece={board.get(cell)} />
-                                    </Square>
-                                )}
-                            </div>
-                            <div className="white-side-subgrid bg-black-cell rounded-lg">
-                                {WHITE_SIDE_CELLS.map(cell =>
-                                    <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
-                                        <Piece piece={board.get(cell)} />
-                                    </Square>
-                                )}
-                            </div>
-                            <div className="black-side-subgrid bg-white-cell rounded-lg">
-                                {BLACK_SIDE_CELLS.map(cell =>
-                                    <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
-                                        <Piece piece={board.get(cell)} />
-                                    </Square>
-                                )}
-                            </div>
-                            <div className="contents">
-                                {COLUMNS.map(c =>
-                                    <div key={c} style={{ gridArea: `r${c}` }} className="text-neutral-400 place-self-center">{c.toLowerCase()}</div>
-                                )}
-                            </div>
-                            <div className="contents">
-                                {ROWS.map(r =>
-                                    <div key={r} style={{ gridArea: `r${r}` }} className="text-neutral-400 place-self-center">{r}</div>
-                                )}
-                            </div>
+                        <div className="board-subgrid checkered-background rounded-lg">
+                            {BOARD_CELLS.map(cell =>
+                                <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                    <Piece piece={board.get(cell)} />
+                                </Square>
+                            )}
+                        </div>
+                        <div className="white-side-subgrid bg-black-cell rounded-lg">
+                            {WHITE_SIDE_CELLS.map(cell =>
+                                <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                    <Piece piece={board.get(cell)} />
+                                </Square>
+                            )}
+                        </div>
+                        <div className="black-side-subgrid bg-white-cell rounded-lg">
+                            {BLACK_SIDE_CELLS.map(cell =>
+                                <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                    <Piece piece={board.get(cell)} />
+                                </Square>
+                            )}
+                        </div>
+                        <div className="contents">
+                            {COLUMNS.map(c =>
+                                <div key={c} style={{ gridArea: `r${c}` }} className="text-neutral-400 place-self-center">{c.toLowerCase()}</div>
+                            )}
+                        </div>
+                        <div className="contents">
+                            {ROWS.map(r =>
+                                <div key={r} style={{ gridArea: `r${r}` }} className="text-neutral-400 place-self-center">{r}</div>
+                            )}
                         </div>
                     </div>
                 </div>
