@@ -3,8 +3,8 @@ import { BoardCell, DeskCell, BOARD_CELLS, COLUMNS, PieceType, ROWS, SideCell, W
 import { Difficulty, DIFFICULTY_RANGES } from "./constants";
 import Piece from "./Piece";
 import Square from "./Square";
-import DifficultySelector from './DifficultySelector';
-import PuzzleDescription from './PuzzleDescription';
+import DifficultySelector from "./DifficultySelector";
+import PuzzleDescription from "./PuzzleDescription";
 
 const SIDE_CELLS_MAP = new Map<SideCell, PieceType>([
     ['w1', new PieceType('rook', 'white')], ['w2', new PieceType('king', 'white')], ['w3', new PieceType('knight', 'white')], ['w4', new PieceType('queen', 'white')], ['w5', new PieceType('bishop', 'white')], ['w6', new PieceType('pawn', 'white')],
@@ -51,7 +51,6 @@ function fenToBoardMap(fen: string): Map<BoardCell, PieceType> {
     return boardMap;
 }
 
-// Fetch random puzzle from API
 async function getRandomBoardFromAPI(difficulty: Difficulty = 'easy'): Promise<{
     board: any,
     index: number,
@@ -68,12 +67,11 @@ async function getRandomBoardFromAPI(difficulty: Difficulty = 'easy'): Promise<{
         
         const randomBoard = await response.json();
         
-        // Decode FEN if needed
         let fen = randomBoard.fen;
         try {
             fen = decodeURIComponent(fen);
         } catch (e) {
-            // Keep original if not encoded
+
         }
         
         return {
@@ -86,17 +84,14 @@ async function getRandomBoardFromAPI(difficulty: Difficulty = 'easy'): Promise<{
         };
     } catch (error) {
         console.error('Error fetching puzzle from API:', error);
-        // Fallback to local function if API fails
         return getFallbackBoard(difficulty);
     }
 }
 
-// Fallback function in case API is down
 function getFallbackBoard(difficulty: Difficulty = 'easy') {
     const range = DIFFICULTY_RANGES[difficulty];
     const randomIndex = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
     
-    // Return a basic structure - you might want to keep a minimal local fallback
     return {
         board: null,
         index: randomIndex,
@@ -125,9 +120,7 @@ export default function Board() {
     const [solution, setSolution] = useState<string>('');
     const [isSolutionRevealed, setIsSolutionRevealed] = useState<boolean>(false);
     const [puzzleIndex, setPuzzleIndex] = useState<number>(0);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [animatingPieces, setAnimatingPieces] = useState<Set<DeskCell>>(new Set());
     
     const gridElement = useRef<HTMLDivElement>(null);
 
@@ -165,13 +158,15 @@ export default function Board() {
     }
     
     async function loadNewPuzzle() {
-        setIsLoading(true);
         setError(null);
+        
         try {
             const newPuzzleData = await getRandomBoardFromAPI(difficulty);
             setPuzzleData(newPuzzleData);
             setDescription(newPuzzleData.description);
+            
             setBoard(new Map([...newPuzzleData.boardFromFen, ...SIDE_CELLS_MAP]));
+            
             setDirection(newPuzzleData.direction);
             setSolution(newPuzzleData.solution);
             setSelectedCell(null);
@@ -180,8 +175,6 @@ export default function Board() {
         } catch (error) {
             setError('Failed to load puzzle. Please try again.');
             console.error('Error loading puzzle:', error);
-        } finally {
-            setIsLoading(false);
         }
     }
     
@@ -198,8 +191,7 @@ export default function Board() {
         if (puzzleIndex >= 223 && puzzleIndex <= 984) return 'medium';
         return 'hard';
     };
-    
-    // Load initial puzzle
+
     useEffect(() => {
         loadNewPuzzle();
     }, []);
@@ -232,28 +224,23 @@ export default function Board() {
             }
         }
         if (gridElement.current) {
-            new MutationObserver(callback).observe(
+            const observer = new MutationObserver(callback);
+            observer.observe(
                 gridElement.current, 
                 {subtree: true, childList: true, attributes: false, characterData: false}
             );
+            
+            return () => observer.disconnect();
         }
-      }, []);
+    }, []);
     
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
-                <div className="text-white text-lg">Loading puzzle...</div>
-            </div>
-        );
-    }
-    
-    if (error) {
+    if (error && !puzzleData) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
                 <div className="text-red-500 text-lg mb-4">{error}</div>
                 <button 
                     onClick={loadNewPuzzle}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 >
                     Try Again
                 </button>
@@ -263,7 +250,7 @@ export default function Board() {
     
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
-            {/* Description component */}
+            {/* Description */}
             <PuzzleDescription 
                 puzzleIndex={puzzleIndex}
                 difficulty={getCurrentDifficulty()}
@@ -272,8 +259,9 @@ export default function Board() {
             />
             
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 w-full">
+                {/* Controls panel */}
                 <div 
-                    className="order-2 md:order-1 rounded-lg p-4 mb-4 md:mb-0 flex flex-col gap-3"
+                    className="order-2 md:order-1 rounded-lg p-4 mb-4 md:mb-0 flex flex-col gap-3 min-w-[200px]"
                     style={{ backgroundColor: 'var(--white-cell-color)' }}
                 >
                     <DifficultySelector 
@@ -283,7 +271,7 @@ export default function Board() {
                     
                     <button 
                         onClick={restartPuzzle}
-                        className="px-4 py-2 text-black rounded-lg transition-colors whitespace-nowrap hover:opacity-90 w-full"
+                        className="px-4 py-2 text-black rounded-lg transition-all whitespace-nowrap hover:opacity-90 w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ backgroundColor: 'var(--black-cell-color)' }}
                         title="Reset current puzzle to starting position"
                     >
@@ -292,7 +280,7 @@ export default function Board() {
                     
                     <button 
                         onClick={loadNewPuzzle}
-                        className="px-4 py-2 text-black rounded-lg transition-colors whitespace-nowrap hover:opacity-90 w-full"
+                        className="px-4 py-2 text-black rounded-lg transition-all whitespace-nowrap hover:opacity-90 w-full disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ backgroundColor: 'var(--black-cell-color)' }}
                         title="Load a new random puzzle"
                     >
@@ -302,36 +290,38 @@ export default function Board() {
                 
                 <div className="order-1 md:order-2 relative">
                     <div ref={gridElement} className="desk-grid-area w-[min(100vh,100vw)] p-3">
-                        <div className="board-subgrid checkered-background rounded-lg">
-                            {BOARD_CELLS.map(cell =>
-                                <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
-                                    <Piece piece={board.get(cell)} />
-                                </Square>
-                            )}
-                        </div>
-                        <div className="white-side-subgrid bg-black-cell rounded-lg">
-                            {WHITE_SIDE_CELLS.map(cell =>
-                                <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
-                                    <Piece piece={board.get(cell)} />
-                                </Square>
-                            )}
-                        </div>
-                        <div className="black-side-subgrid bg-white-cell rounded-lg">
-                            {BLACK_SIDE_CELLS.map(cell =>
-                                <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
-                                    <Piece piece={board.get(cell)} />
-                                </Square>
-                            )}
-                        </div>
-                        <div className="contents">
-                            {COLUMNS.map(c =>
-                                <div key={c} style={{ gridArea: `r${c}` }} className="text-neutral-400 place-self-center">{c.toLowerCase()}</div>
-                            )}
-                        </div>
-                        <div className="contents">
-                            {ROWS.map(r =>
-                                <div key={r} style={{ gridArea: `r${r}` }} className="text-neutral-400 place-self-center">{r}</div>
-                            )}
+                        <div ref={gridElement} className="desk-grid-area w-[min(100vh,100vw)] p-3">
+                            <div className="board-subgrid checkered-background rounded-lg">
+                                {BOARD_CELLS.map(cell =>
+                                    <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                        <Piece piece={board.get(cell)} />
+                                    </Square>
+                                )}
+                            </div>
+                            <div className="white-side-subgrid bg-black-cell rounded-lg">
+                                {WHITE_SIDE_CELLS.map(cell =>
+                                    <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                        <Piece piece={board.get(cell)} />
+                                    </Square>
+                                )}
+                            </div>
+                            <div className="black-side-subgrid bg-white-cell rounded-lg">
+                                {BLACK_SIDE_CELLS.map(cell =>
+                                    <Square key={cell} name={cell} onClick={() => onSelectedCell(cell)} isSelected={selectedCell == cell}>
+                                        <Piece piece={board.get(cell)} />
+                                    </Square>
+                                )}
+                            </div>
+                            <div className="contents">
+                                {COLUMNS.map(c =>
+                                    <div key={c} style={{ gridArea: `r${c}` }} className="text-neutral-400 place-self-center">{c.toLowerCase()}</div>
+                                )}
+                            </div>
+                            <div className="contents">
+                                {ROWS.map(r =>
+                                    <div key={r} style={{ gridArea: `r${r}` }} className="text-neutral-400 place-self-center">{r}</div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
