@@ -4,6 +4,11 @@ interface ControlButtonProps {
     children: React.ReactNode;
 }
 
+interface LoginButtonProps {
+    onClick: () => void;
+    title?: string;
+}
+
 export default function ControlButton({ onClick, title, children }: ControlButtonProps) {
     return (
         <div className="relative">
@@ -19,5 +24,19 @@ export default function ControlButton({ onClick, title, children }: ControlButto
                 {children}
             </button>
         </div>
+    );
+}
+
+export function LoginButton({ onClick, title = "Login to save your progress" }: LoginButtonProps) {
+    return (
+        <button 
+            className="text-neutral-300 hover:text-white font-medium transition-colors duration-200
+                      text-lg px-4 py-2 rounded-lg hover:bg-white/10 active:bg-white/20
+                      border border-white/20 hover:border-white/40 active:border-white/60"
+            onClick={onClick}
+            title={title}
+        >
+            Login
+        </button>
     );
 }

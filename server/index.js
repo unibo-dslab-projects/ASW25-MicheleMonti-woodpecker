@@ -101,13 +101,11 @@ app.get('/api/puzzles/random/:difficulty', async (req, res) => {
       return res.status(400).json({ error: 'Invalid difficulty level' });
     }
     
-    // Get the single document
     const doc = await Puzzle.findOne();
     if (!doc) {
       return res.status(404).json({ error: 'Puzzle data not found' });
     }
     
-    // Collect puzzles in the difficulty range
     const puzzlesInRange = [];
     
     for (let i = range.min; i <= range.max; i++) {

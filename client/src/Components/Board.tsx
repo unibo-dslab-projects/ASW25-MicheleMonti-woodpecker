@@ -6,7 +6,7 @@ import Square from "./Square";
 import DifficultySelector from "./DifficultySelector";
 import PuzzleDescription from "./PuzzleDescription";
 import LoadingOverlay from "./LoadingOverlay";
-import ControlButton from "./ControlButton";
+import ControlButton, { LoginButton } from "./ControlButton";
 import { getRandomBoardFromAPI } from "./utils/apiUtils";
 import { SIDE_CELLS_MAP, fenToBoardMap } from "./utils/boardUtils";
 
@@ -143,7 +143,17 @@ export default function Board() {
     }
     
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
+        <div className="flex flex-col items-center min-h-screen bg-black-background p-4">
+            <div className="w-full flex justify-between items-center mb-6">
+                <div></div>
+                <LoginButton 
+                    onClick={() => {
+                        // TODO: Add login functionality
+                        console.log('Login clicked');
+                    }}
+                />
+            </div>
+            
             <PuzzleDescription 
                 puzzleIndex={puzzleIndex}
                 difficulty={getCurrentDifficulty()}
