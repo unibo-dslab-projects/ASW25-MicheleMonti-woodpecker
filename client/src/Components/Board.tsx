@@ -9,8 +9,10 @@ import LoadingOverlay from "./LoadingOverlay";
 import ControlButton, { LoginButton } from "./ControlButton";
 import { getRandomBoardFromAPI } from "./utils/apiUtils";
 import { SIDE_CELLS_MAP, fenToBoardMap } from "./utils/boardUtils";
+import LoginPage from "./LoginPage";
 
 export default function Board() {
+    const [showLoginPage, setShowLoginPage] = useState<boolean>(false);
     const [difficulty, setDifficulty] = useState<Difficulty>('easy');
     const [puzzleData, setPuzzleData] = useState<{
         board: any,
@@ -126,6 +128,11 @@ export default function Board() {
         }
     }, []);
     
+    // Show Login Page if state is true
+    if (showLoginPage) {
+        return <LoginPage onBack={() => setShowLoginPage(false)} />;
+    }
+    
     if (error && !puzzleData) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-black-background p-4">
@@ -144,22 +151,23 @@ export default function Board() {
     
     return (
         <div className="flex flex-col items-center min-h-screen bg-black-background p-4">
-            <div className="w-full flex justify-between items-center mb-6">
-                <div></div>
-                <LoginButton 
-                    onClick={() => {
-                        // TODO: Add login functionality
-                        console.log('Login clicked');
-                    }}
-                />
+            {/* Combined header row with PuzzleDescription and LoginButton */}
+            <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div className="flex-1">
+                    <PuzzleDescription 
+                        puzzleIndex={puzzleIndex}
+                        difficulty={getCurrentDifficulty()}
+                        direction={direction}
+                        description={description}
+                    />
+                </div>
+                <div className="md:ml-4 flex-shrink-0">
+                    <LoginButton 
+                        onClick={() => setShowLoginPage(true)}
+                        title="Login to save your progress"
+                    />
+                </div>
             </div>
-            
-            <PuzzleDescription 
-                puzzleIndex={puzzleIndex}
-                difficulty={getCurrentDifficulty()}
-                direction={direction}
-                description={description}
-            />
             
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 w-full">
                 <div 
