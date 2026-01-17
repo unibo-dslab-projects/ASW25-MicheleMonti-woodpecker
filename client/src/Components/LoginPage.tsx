@@ -1,10 +1,55 @@
-export default function LoginPage({ onBack }: { onBack: () => void }) {
-    const handleSubmit = (e: React.FormEvent) => {
+import { useState } from 'react';
+import { loginUser } from './utils/apiUtils';
+
+interface LoginPageProps {
+    onBack: () => void;
+    onLoginSuccess: (username: string) => void;
+}
+
+export default function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // In a real app, you would handle login logic here
-        console.log("Login form submitted");
-        // For now, just go back to the board
-        onBack();
+        setError(null);
+        
+        // Basic validation
+        if (!username.trim() || !password.trim()) {
+            setError('Please enter both username and password');
+            return;
+        }
+        
+        setIsLoading(true);
+
+        try {
+            // Call the login API from your Express server
+            const result = await loginUser(username.trim(), password.trim());
+
+            if (result.success && result.username) {
+                // Server verified credentials and returned JWT
+                console.log('Login successful, token stored');
+                onLoginSuccess(result.username);
+                onBack();
+            } else {
+                // Server returned an error
+                setError(result.error || 'Invalid username or password');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            setError('Network error. Please check if the server is running.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Optional: Pre-fill for testing (remove in production)
+    const fillTestCredentials = () => {
+        setUsername('Michele');
+        setPassword('test123'); // You'll need to know the actual password
+        setError(null);
     };
 
     return (
@@ -26,40 +71,76 @@ export default function LoginPage({ onBack }: { onBack: () => void }) {
                     style={{ backgroundColor: 'var(--white-cell-color)' }}
                 >
                     <h1 className="text-3xl font-bold text-neutral-800 text-center mb-8">Login</h1>
+                    
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
-                            <label htmlFor="username" className="block text-neutral-700 font-medium mb-2">Username</label>
+                            <label htmlFor="username" className="block text-neutral-700 font-medium mb-2">
+                                Username
+                            </label>
                             <input
                                 type="text"
                                 id="username"
-                                className="w-full px-4 py-3 rounded-lg bg-white/90 border border-white/20 text-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg bg-white/90 border border-white/20 text-neutral-800 
+                                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
+                                         transition-all duration-200"
                                 placeholder="Enter your username"
+                                disabled={isLoading}
+                                required
+                                autoComplete="username"
                             />
                         </div>
+                        
                         <div>
-                            <label htmlFor="password" className="block text-neutral-700 font-medium mb-2">Password</label>
+                            <label htmlFor="password" className="block text-neutral-700 font-medium mb-2">
+                                Password
+                            </label>
                             <input
                                 type="password"
                                 id="password"
-                                className="w-full px-4 py-3 rounded-lg bg-white/90 border border-white/20 text-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg bg-white/90 border border-white/20 text-neutral-800 
+                                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
+                                         transition-all duration-200"
                                 placeholder="Enter your password"
+                                disabled={isLoading}
+                                required
+                                autoComplete="current-password"
                             />
                         </div>
+                        
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                                {error}
+                            </div>
+                        )}
+                        
                         <button
                             type="submit"
+                            disabled={isLoading}
                             className="w-full px-6 py-4 text-black font-bold rounded-xl transition-all duration-200 
                                       shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] active:shadow-md
                                       border-b-4 border-gray-700 hover:border-gray-800
-                                      hover:brightness-110 active:brightness-95"
+                                      hover:brightness-110 active:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{ backgroundColor: 'var(--black-cell-color)' }}
                         >
-                            Confirm
+                            {isLoading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Authenticating...
+                                </span>
+                            ) : 'Login'}
                         </button>
                     </form>
                     
                     <div className="mt-8 pt-6 border-t border-white/10">
                         <p className="text-neutral-600 text-center text-sm">
-                            This is a demo login page. No actual login functionality is implemented.
+                            Connected to MongoDB Atlas for puzzles
                         </p>
                     </div>
                 </div>

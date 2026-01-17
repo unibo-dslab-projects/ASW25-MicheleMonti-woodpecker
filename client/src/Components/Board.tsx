@@ -1,3 +1,4 @@
+// Board.tsx - Updated with authentication
 import { useEffect, useRef, useState } from "react";
 import { DeskCell, BOARD_CELLS, COLUMNS, ROWS, SideCell, WHITE_SIDE_CELLS, BLACK_SIDE_CELLS, PieceType } from "../defs";
 import { Difficulty } from "./constants";
@@ -7,12 +8,15 @@ import DifficultySelector from "./DifficultySelector";
 import PuzzleDescription from "./PuzzleDescription";
 import LoadingOverlay from "./LoadingOverlay";
 import ControlButton, { LoginButton } from "./ControlButton";
-import { getRandomBoardFromAPI } from "./utils/apiUtils";
+import { getRandomBoardFromAPI, checkAuth, logoutUser } from "./utils/apiUtils";
 import { SIDE_CELLS_MAP, fenToBoardMap } from "./utils/boardUtils";
 import LoginPage from "./LoginPage";
 
 export default function Board() {
     const [showLoginPage, setShowLoginPage] = useState<boolean>(false);
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+    const [username, setUsername] = useState<string>('');
+    const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
     const [difficulty, setDifficulty] = useState<Difficulty>('easy');
     const [puzzleData, setPuzzleData] = useState<{
         board: any,
@@ -34,6 +38,27 @@ export default function Board() {
     const [isLoadingNewPuzzle, setIsLoadingNewPuzzle] = useState<boolean>(false);
     
     const gridElement = useRef<HTMLDivElement>(null);
+
+    // Check authentication status on component mount
+    useEffect(() => {
+        const checkAuthentication = async () => {
+            setIsCheckingAuth(true);
+            try {
+                const authStatus = await checkAuth();
+                if (authStatus.authenticated) {
+                    setIsLoggedIn(true);
+                    setUsername(authStatus.username || '');
+                    console.log('User authenticated:', authStatus.username);
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+            } finally {
+                setIsCheckingAuth(false);
+            }
+        };
+
+        checkAuthentication();
+    }, []);
 
     function isSideCell(cell: DeskCell): boolean {
         return WHITE_SIDE_CELLS.includes(cell as typeof WHITE_SIDE_CELLS[number]) || BLACK_SIDE_CELLS.includes(cell as typeof BLACK_SIDE_CELLS[number]);
@@ -128,9 +153,26 @@ export default function Board() {
         }
     }, []);
     
+    const handleLoginSuccess = (loggedInUsername: string) => {
+        setIsLoggedIn(true);
+        setUsername(loggedInUsername);
+        setShowLoginPage(false);
+    };
+
+    const handleLogout = async () => {
+        try {
+            await logoutUser();
+            setIsLoggedIn(false);
+            setUsername('');
+            console.log('User logged out');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
+    
     // Show Login Page if state is true
     if (showLoginPage) {
-        return <LoginPage onBack={() => setShowLoginPage(false)} />;
+        return <LoginPage onBack={() => setShowLoginPage(false)} onLoginSuccess={handleLoginSuccess} />;
     }
     
     if (error && !puzzleData) {
@@ -151,7 +193,7 @@ export default function Board() {
     
     return (
         <div className="flex flex-col items-center min-h-screen bg-black-background p-4">
-            {/* Combined header row with PuzzleDescription and LoginButton */}
+            {/* Combined header row with PuzzleDescription and Login/User info */}
             <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div className="flex-1">
                     <PuzzleDescription 
@@ -162,10 +204,32 @@ export default function Board() {
                     />
                 </div>
                 <div className="md:ml-4 flex-shrink-0">
-                    <LoginButton 
-                        onClick={() => setShowLoginPage(true)}
-                        title="Login to save your progress"
-                    />
+                    {isCheckingAuth ? (
+                        <div className="text-neutral-400 text-sm animate-pulse">
+                            Checking auth...
+                        </div>
+                    ) : isLoggedIn ? (
+                        <div className="flex flex-col md:flex-row items-center gap-4">
+                            <div className="text-center md:text-right">
+                                <span className="text-neutral-300 text-sm block">Logged in as</span>
+                                <span className="text-white font-bold text-lg">{username}</span>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="px-4 py-2 text-neutral-300 hover:text-white font-medium transition-colors duration-200
+                                          rounded-lg hover:bg-white/10 active:bg-white/20 border border-white/20 
+                                          hover:border-white/40 active:border-white/60"
+                                title="Logout"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    ) : (
+                        <LoginButton 
+                            onClick={() => setShowLoginPage(true)}
+                            title="Login to save your progress"
+                        />
+                    )}
                 </div>
             </div>
             
