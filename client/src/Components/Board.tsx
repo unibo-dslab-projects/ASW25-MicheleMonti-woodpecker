@@ -11,6 +11,7 @@ import ControlButton, { LoginButton } from "./ControlButton";
 import { getRandomBoardFromAPI, checkAuth, logoutUser } from "./utils/apiUtils";
 import { SIDE_CELLS_MAP, fenToBoardMap } from "./utils/boardUtils";
 import LoginPage from "./LoginPage";
+import PuzzleEvaluation from "./PuzzleEvaluation";
 
 export default function Board() {
     const [showLoginPage, setShowLoginPage] = useState<boolean>(false);
@@ -36,6 +37,7 @@ export default function Board() {
     const [puzzleIndex, setPuzzleIndex] = useState<number>(0);
     const [error, setError] = useState<string | null>(null);
     const [isLoadingNewPuzzle, setIsLoadingNewPuzzle] = useState<boolean>(false);
+    const [evaluation, setEvaluation] = useState<string | null>(null);
     
     const gridElement = useRef<HTMLDivElement>(null);
 
@@ -106,6 +108,7 @@ export default function Board() {
             setSelectedCell(null);
             setIsSolutionRevealed(false);
             setPuzzleIndex(newPuzzleData.index);
+            setEvaluation(null);
         } catch (error) {
             setError('Failed to load puzzle. Please try again.');
             console.error('Error loading puzzle:', error);
@@ -113,12 +116,13 @@ export default function Board() {
             setIsLoadingNewPuzzle(false);
         }
     }
-    
+
     function restartPuzzle() {
         if (puzzleData) {
             setBoard(new Map([...puzzleData.boardFromFen, ...SIDE_CELLS_MAP]));
             setSelectedCell(null);
             setIsSolutionRevealed(false);
+            setEvaluation(null);
         }
     }
     
@@ -240,6 +244,11 @@ export default function Board() {
                     style={{ backgroundColor: 'var(--white-cell-color)' }}
                 >
                     <div className="relative"><DifficultySelector difficulty={difficulty} setDifficulty={setDifficulty} /></div>
+                    <PuzzleEvaluation 
+                        isLoggedIn={isLoggedIn}
+                        selectedEvaluation={evaluation}
+                        onEvaluationChange={setEvaluation}
+                    />
                     <ControlButton onClick={restartPuzzle} title="Reset current puzzle to starting position">Restart Puzzle</ControlButton>
                     <ControlButton onClick={loadNewPuzzle} title="Load a new random puzzle">Next Puzzle</ControlButton>
                 </div>
