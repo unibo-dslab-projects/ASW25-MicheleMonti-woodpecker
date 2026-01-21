@@ -13,8 +13,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://MontiMic:RavuNL0YhiNxHuQx@cluster0.guvyxky.mongodb.net/woodpecker_boards?retryWrites=true&w=majority';
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const MONGODB_URI = process.env.MONGODB_URI;
+const JWT_SECRET = process.env.JWT_SECRET;
+const PORT = process.env.PORT;
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
@@ -379,7 +380,6 @@ app.get('/api/puzzles/range/:min/:max', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`\n=== Woodpecker Chess Server ===`);
     console.log(`Server running on port ${PORT}`);
