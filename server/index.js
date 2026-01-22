@@ -15,24 +15,26 @@ app.use(express.json());
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const JWT_SECRET = process.env.JWT_SECRET;
+const PORT = process.env.PORT;
 
-
-// Connect to MongoDB
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB Atlas (woodpecker_boards database)'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Schema for the users collection (which contains an array of users)
+const userSubSchema = new mongoose.Schema({
+    username: String,
+    password_hash: String
+}, { _id: false });
+
 const usersCollectionSchema = new mongoose.Schema({
-    users: [{
-        username: String,
-        password_hash: String
-    }]
-}, { collection: 'users' });
+    users: [userSubSchema]
+}, { 
+    collection: 'users',
+    versionKey: false
+});
 
 const UsersCollection = mongoose.model('UsersCollection', usersCollectionSchema);
 
-// Puzzle Schema (existing)
 const puzzleSchema = new mongoose.Schema({}, { 
     strict: false, 
     collection: 'puzzles'
@@ -58,7 +60,6 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Helper function to extract puzzles
 function extractPuzzlesFromDocument(doc) {
     const puzzles = [];
     
@@ -82,30 +83,111 @@ function extractPuzzlesFromDocument(doc) {
     return puzzles.sort((a, b) => a.puzzle_id - b.puzzle_id);
 }
 
-// ========== AUTHENTICATION ROUTES ==========
-
-// Debug endpoint to see users structure
-app.get('/api/auth/debug-users', async (req, res) => {
+// Registration route
+app.post('/api/auth/register', async (req, res) => {
     try {
-        const usersDoc = await UsersCollection.findOne({});
+        const { username, password } = req.body;
+
+        console.log(`[Registration] Attempting to register user: ${username}`);
+        console.log(`[Registration] Request body:`, { username: username, password: '[HIDDEN]' });
+
+        if (!username || !password) {
+            console.log('[Registration] Validation failed: missing fields');
+            return res.status(400).json({ error: 'Username and password are required' });
+        }
+
+        if (password.length < 6) {
+            console.log('[Registration] Validation failed: password too short');
+            return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+        }
+
+        console.log('[Registration] Checking for existing users collection...');
+        let usersDoc = await UsersCollection.findOne({});
+        
+        console.log(`[Registration] Current usersDoc:`, usersDoc);
+        
         if (!usersDoc) {
-            return res.json({ usersCount: 0, users: [] });
+            console.log('[Registration] No existing users document, creating new one');
+            usersDoc = new UsersCollection({
+                users: []
+            });
+            await usersDoc.save();
+            console.log('[Registration] Created empty users document');
+        }
+
+        const existingUser = usersDoc.users.find(u => 
+            u.username && u.username.toLowerCase() === username.toLowerCase().trim()
+        );
+        
+        if (existingUser) {
+            console.log(`[Registration] Username "${username}" already exists`);
+            return res.status(409).json({ error: 'Username already exists' });
+        }
+
+        console.log(`[Registration] Username "${username}" is available`);
+
+        const saltRounds = 10;
+        const passwordHash = await bcrypt.hash(password, saltRounds);
+        console.log('[Registration] Password hashed successfully');
+
+        const newUser = {
+            username: username.trim(),
+            password_hash: passwordHash
+        };
+
+        console.log('[Registration] New user object:', { 
+            username: newUser.username, 
+            password_hash_length: newUser.password_hash.length 
+        });
+
+        usersDoc.users.push(newUser);
+        console.log(`[Registration] Added user to array. Total users now: ${usersDoc.users.length}`);
+
+        console.log('[Registration] Attempting to save to database...');
+        const savedDoc = await usersDoc.save();
+        console.log('[Registration] Save successful, document ID:', savedDoc._id);
+
+        const token = jwt.sign(
+            { 
+                userId: username,
+                username: username 
+            },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        console.log(`[Registration] JWT token generated for user: ${username}`);
+
+        res.status(201).json({
+            message: 'Registration successful',
+            token,
+            user: {
+                id: username,
+                username: username
+            }
+        });
+
+        console.log(`[Registration] Registration completed successfully for user: ${username}`);
+
+    } catch (error) {
+        console.error('[Registration] ERROR DETAILS:');
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        
+        if (error.code) {
+            console.error('Error code:', error.code);
         }
         
-        res.json({
-            usersCount: usersDoc.users.length,
-            users: usersDoc.users.map(u => ({
-                username: u.username,
-                hashLength: u.password_hash?.length || 0,
-                hashPrefix: u.password_hash?.substring(0, 30) + '...'
-            }))
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+        if (error.name === 'MongoError') {
+            console.error('MongoDB Error details:', error);
+        }
+        
+        res.status(500).json({ error: 'Registration failed: ' + error.message });
     }
 });
 
-// Login route - now handles array structure
+// Login route
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -116,7 +198,6 @@ app.post('/api/auth/login', async (req, res) => {
 
         console.log(`Login attempt for user: ${username}`);
         
-        // Get the users document (which contains the array)
         const usersDoc = await UsersCollection.findOne({});
         
         if (!usersDoc || !usersDoc.users || usersDoc.users.length === 0) {
@@ -126,7 +207,6 @@ app.post('/api/auth/login', async (req, res) => {
 
         console.log(`Found ${usersDoc.users.length} users in array`);
         
-        // Find the user in the array
         const user = usersDoc.users.find(u => 
             u.username && u.username.toLowerCase() === username.toLowerCase().trim()
         );
@@ -140,7 +220,6 @@ app.post('/api/auth/login', async (req, res) => {
         console.log(`User found: ${user.username}`);
         console.log(`Password hash: ${user.password_hash?.substring(0, 30)}...`);
         
-        // Check password using bcrypt
         if (!user.password_hash) {
             console.log('No password hash found for user');
             return res.status(500).json({ error: 'User data error' });
@@ -155,10 +234,9 @@ app.post('/api/auth/login', async (req, res) => {
 
         console.log(`Password valid for: ${user.username}`);
         
-        // Generate JWT token
         const token = jwt.sign(
             { 
-                userId: user.username, // Using username as ID since we don't have separate user IDs
+                userId: user.username,
                 username: user.username 
             },
             JWT_SECRET,
@@ -185,14 +263,12 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     try {
         const username = req.user.username;
         
-        // Get the users document
         const usersDoc = await UsersCollection.findOne({});
         
         if (!usersDoc || !usersDoc.users) {
             return res.status(404).json({ error: 'Users not found' });
         }
         
-        // Find the user in the array
         const user = usersDoc.users.find(u => u.username === username);
         
         if (!user) {
@@ -233,7 +309,6 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-// ========== PUZZLE ROUTES (unchanged) ==========
 
 app.get('/api/puzzles', async (req, res) => {
     try {
@@ -388,6 +463,7 @@ app.listen(PORT, () => {
     console.log(`\nAvailable Endpoints:`);
     console.log(`  Health Check:  GET  http://localhost:${PORT}/api/health`);
     console.log(`  Debug Users:   GET  http://localhost:${PORT}/api/auth/debug-users`);
+    console.log(`  Register:      POST http://localhost:${PORT}/api/auth/register`);
     console.log(`  Login:         POST http://localhost:${PORT}/api/auth/login`);
     console.log(`  Get User:      GET  http://localhost:${PORT}/api/auth/me (requires token)`);
     console.log(`  Random Puzzle: GET  http://localhost:${PORT}/api/puzzles/random/:difficulty`);

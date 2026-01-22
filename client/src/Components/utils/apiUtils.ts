@@ -26,6 +26,49 @@ export function getAuthHeader(): { Authorization: string } | {} {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+export async function registerUser(username: string, password: string): Promise<{ 
+    success: boolean; 
+    username?: string; 
+    token?: string;
+    error?: string 
+}> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            return { 
+                success: false, 
+                error: data.error || `Registration failed (${response.status})` 
+            };
+        }
+
+        // Store the token
+        if (data.token) {
+            setToken(data.token);
+        }
+
+        return { 
+            success: true, 
+            username: data.user?.username || username,
+            token: data.token
+        };
+    } catch (error) {
+        console.error('Registration error:', error);
+        return { 
+            success: false, 
+            error: 'Network error. Please check your connection.' 
+        };
+    }
+}
+
 // Authentication functions
 export async function loginUser(username: string, password: string): Promise<{ 
     success: boolean; 

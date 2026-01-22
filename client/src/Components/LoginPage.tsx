@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { loginUser } from './utils/apiUtils';
+import { loginUser, registerUser } from './utils/apiUtils';
 
 interface LoginPageProps {
     onBack: () => void;
@@ -20,12 +20,14 @@ export default function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
         e.preventDefault();
         setError(null);
         
+        // Basic validation
         if (!username.trim() || !password.trim()) {
             setError('Please enter both username and password');
             return;
         }
         
         if (mode === 'register') {
+            // Registration validation
             if (password !== confirmPassword) {
                 setError('Passwords do not match');
                 return;
@@ -36,11 +38,29 @@ export default function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
                 return;
             }
             
-            setError('Registration is not yet implemented on the server');
-            setIsLoading(false);
+            setIsLoading(true);
+            
+            try {
+                const result = await registerUser(username.trim(), password);
+                
+                if (result.success && result.username) {
+                    console.log('Registration successful, token stored');
+                    onLoginSuccess(result.username);
+                    onBack();
+                } else {
+                    setError(result.error || 'Registration failed');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                setError('Network error. Please check if the server is running.');
+            } finally {
+                setIsLoading(false);
+            }
+            
             return;
         }
-
+        
+        // Login logic (existing)
         setIsLoading(true);
 
         try {
