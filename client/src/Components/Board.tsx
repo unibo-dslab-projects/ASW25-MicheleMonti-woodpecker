@@ -213,21 +213,17 @@ export default function Board() {
                             Checking auth...
                         </div>
                     ) : isLoggedIn ? (
-                        <div className="flex flex-col md:flex-row items-center gap-4">
-                            <div className="text-center md:text-right">
-                                <span className="text-neutral-300 text-sm block">Logged in as</span>
-                                <span className="text-white font-bold text-lg">{username}</span>
-                            </div>
-                            <button
-                                onClick={handleLogout}
-                                className="px-4 py-2 text-neutral-300 hover:text-white font-medium transition-colors duration-200
-                                          rounded-lg hover:bg-white/10 active:bg-white/20 border border-white/20 
-                                          hover:border-white/40 active:border-white/60"
-                                title="Logout"
-                            >
-                                Logout
-                            </button>
-                        </div>
+                        <button 
+                            onClick={handleLogout}
+                            className="px-6 py-3 text-black font-bold rounded-xl transition-all duration-200 
+                                    shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 active:shadow-md
+                                    border-b-4 border-gray-700 hover:border-gray-800
+                                    hover:brightness-110 active:brightness-95 relative z-10"
+                            style={{ backgroundColor: 'var(--black-cell-color)' }}
+                            title="Click to logout"
+                        >
+                            {username}
+                        </button>
                     ) : (
                         <LoginButton 
                             onClick={() => setShowLoginPage(true)}
