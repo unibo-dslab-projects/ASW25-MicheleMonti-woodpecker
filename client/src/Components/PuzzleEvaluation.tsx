@@ -9,12 +9,8 @@ export default function PuzzleEvaluation({
     selectedEvaluation,
     onEvaluationChange
 }: PuzzleEvaluationProps) {
-    const handleEvaluationSelect = (evaluation: string) => {
-        if (selectedEvaluation === evaluation) {
-            onEvaluationChange(null);
-        } else {
-            onEvaluationChange(evaluation);
-        }
+    const handleEvaluationSelect = (selectedValue: string) => {
+        onEvaluationChange(selectedValue);
     };
 
     if (!isLoggedIn) {

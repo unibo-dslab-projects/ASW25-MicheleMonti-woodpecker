@@ -167,7 +167,6 @@ export async function checkAuth(): Promise<{
     }
 }
 
-// Existing puzzle function (keep as is)
 export async function getRandomBoardFromAPI(difficulty: Difficulty = 'easy'): Promise<{
     board: any,
     index: number,
@@ -198,12 +197,15 @@ export async function getRandomBoardFromAPI(difficulty: Difficulty = 'easy'): Pr
     }
 }
 
-// Optional: Add a function to save user progress (if you implement this later)
-export async function savePuzzleProgress(
+// Evaluation functions
+export async function saveEvaluation(
     puzzleId: number, 
-    isSolved: boolean, 
-    timeSpent?: number
-): Promise<{ success: boolean; error?: string }> {
+    evaluation: string
+): Promise<{ 
+    success: boolean; 
+    error?: string;
+    message?: string;
+}> {
     try {
         const token = getToken();
         
@@ -211,16 +213,72 @@ export async function savePuzzleProgress(
             return { success: false, error: 'Not authenticated' };
         }
 
-        // This would require a new endpoint on your server
-        // For now, just log it
-        console.log('Puzzle progress (would save to server):', { 
-            puzzleId, 
-            isSolved, 
-            timeSpent 
+        const response = await fetch(`${API_BASE_URL}/evaluations/save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ puzzleId, evaluation }),
         });
-        return { success: true };
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            return { 
+                success: false, 
+                error: data.error || `Failed to save evaluation (${response.status})` 
+            };
+        }
+
+        return { 
+            success: true,
+            message: data.message
+        };
     } catch (error) {
-        console.error('Error saving progress:', error);
-        return { success: false, error: 'Failed to save progress' };
+        console.error('Error saving evaluation:', error);
+        return { success: false, error: 'Failed to save evaluation' };
+    }
+}
+
+export async function getEvaluation(
+    puzzleId: number
+): Promise<{ 
+    success: boolean; 
+    evaluation?: string | null;
+    error?: string;
+}> {
+    try {
+        const token = getToken();
+        
+        if (!token) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const response = await fetch(`${API_BASE_URL}/evaluations/${puzzleId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+        });
+
+        if (!response.ok && response.status !== 404) {
+            return { 
+                success: false, 
+                error: `Failed to get evaluation (${response.status})` 
+            };
+        }
+
+        if (response.status === 404) {
+            return { success: true, evaluation: null };
+        }
+
+        const data = await response.json();
+        return { 
+            success: true, 
+            evaluation: data.evaluation
+        };
+    } catch (error) {
+        console.error('Error getting evaluation:', error);
+        return { success: false, error: 'Failed to get evaluation' };
     }
 }

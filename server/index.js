@@ -21,6 +21,31 @@ mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB Atlas (woodpecker_boards database)'))
   .catch(err => console.error('MongoDB connection error:', err));
 
+
+const evaluationSchema = new mongoose.Schema({
+    puzzle_id: {
+        type: String,
+        required: true
+    },
+    evaluation: {
+        type: String,
+        enum: ['failed', 'partial', 'solved'],
+        required: true
+    }
+}, { _id: false });
+
+const votesSchema = new mongoose.Schema({
+    evaluations: {
+        type: Map,
+        of: [evaluationSchema]
+    }
+}, { 
+    collection: 'votes',
+    versionKey: false 
+});
+
+const Votes = mongoose.model('Votes', votesSchema);
+
 const userSubSchema = new mongoose.Schema({
     username: String,
     password_hash: String
@@ -88,31 +113,21 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         const { username, password } = req.body;
 
-        console.log(`[Registration] Attempting to register user: ${username}`);
-        console.log(`[Registration] Request body:`, { username: username, password: '[HIDDEN]' });
-
         if (!username || !password) {
-            console.log('[Registration] Validation failed: missing fields');
             return res.status(400).json({ error: 'Username and password are required' });
         }
 
         if (password.length < 6) {
-            console.log('[Registration] Validation failed: password too short');
             return res.status(400).json({ error: 'Password must be at least 6 characters long' });
         }
 
-        console.log('[Registration] Checking for existing users collection...');
         let usersDoc = await UsersCollection.findOne({});
         
-        console.log(`[Registration] Current usersDoc:`, usersDoc);
-        
         if (!usersDoc) {
-            console.log('[Registration] No existing users document, creating new one');
             usersDoc = new UsersCollection({
                 users: []
             });
             await usersDoc.save();
-            console.log('[Registration] Created empty users document');
         }
 
         const existingUser = usersDoc.users.find(u => 
@@ -120,32 +135,19 @@ app.post('/api/auth/register', async (req, res) => {
         );
         
         if (existingUser) {
-            console.log(`[Registration] Username "${username}" already exists`);
             return res.status(409).json({ error: 'Username already exists' });
         }
 
-        console.log(`[Registration] Username "${username}" is available`);
-
         const saltRounds = 10;
         const passwordHash = await bcrypt.hash(password, saltRounds);
-        console.log('[Registration] Password hashed successfully');
 
         const newUser = {
             username: username.trim(),
             password_hash: passwordHash
         };
 
-        console.log('[Registration] New user object:', { 
-            username: newUser.username, 
-            password_hash_length: newUser.password_hash.length 
-        });
-
         usersDoc.users.push(newUser);
-        console.log(`[Registration] Added user to array. Total users now: ${usersDoc.users.length}`);
-
-        console.log('[Registration] Attempting to save to database...');
-        const savedDoc = await usersDoc.save();
-        console.log('[Registration] Save successful, document ID:', savedDoc._id);
+        await usersDoc.save();
 
         const token = jwt.sign(
             { 
@@ -156,8 +158,6 @@ app.post('/api/auth/register', async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        console.log(`[Registration] JWT token generated for user: ${username}`);
-
         res.status(201).json({
             message: 'Registration successful',
             token,
@@ -167,22 +167,8 @@ app.post('/api/auth/register', async (req, res) => {
             }
         });
 
-        console.log(`[Registration] Registration completed successfully for user: ${username}`);
-
     } catch (error) {
-        console.error('[Registration] ERROR DETAILS:');
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        
-        if (error.code) {
-            console.error('Error code:', error.code);
-        }
-        
-        if (error.name === 'MongoError') {
-            console.error('MongoDB Error details:', error);
-        }
-        
+        console.error('Registration error:', error);
         res.status(500).json({ error: 'Registration failed: ' + error.message });
     }
 });
@@ -196,44 +182,30 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ error: 'Username and password are required' });
         }
 
-        console.log(`Login attempt for user: ${username}`);
-        
         const usersDoc = await UsersCollection.findOne({});
         
         if (!usersDoc || !usersDoc.users || usersDoc.users.length === 0) {
-            console.log('No users found in database');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        console.log(`Found ${usersDoc.users.length} users in array`);
-        
         const user = usersDoc.users.find(u => 
             u.username && u.username.toLowerCase() === username.toLowerCase().trim()
         );
         
         if (!user) {
-            console.log(`User "${username}" not found in users array`);
-            console.log('Available users:', usersDoc.users.map(u => u.username));
             return res.status(401).json({ error: 'Invalid credentials' });
         }
-
-        console.log(`User found: ${user.username}`);
-        console.log(`Password hash: ${user.password_hash?.substring(0, 30)}...`);
         
         if (!user.password_hash) {
-            console.log('No password hash found for user');
             return res.status(500).json({ error: 'User data error' });
         }
         
         const validPassword = await bcrypt.compare(password, user.password_hash);
         
         if (!validPassword) {
-            console.log(`Invalid password for user: ${user.username}`);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        console.log(`Password valid for: ${user.username}`);
-        
         const token = jwt.sign(
             { 
                 userId: user.username,
@@ -258,7 +230,6 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// Get current user info (protected)
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
     try {
         const username = req.user.username;
@@ -283,6 +254,93 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+
+// Get user's evaluation for a specific puzzle
+app.get('/api/evaluations/:puzzleId', authenticateToken, async (req, res) => {
+    try {
+        const username = req.user.username;
+        const puzzleId = req.params.puzzleId;
+        
+        const votesDoc = await Votes.findOne({});
+        
+        if (!votesDoc || !votesDoc.evaluations) {
+            return res.json({ evaluation: null });
+        }
+        
+        const userEvaluations = votesDoc.evaluations.get(username);
+        
+        if (!userEvaluations || userEvaluations.length === 0) {
+            return res.json({ evaluation: null });
+        }
+        
+        const existingEvaluation = userEvaluations.find(e => e.puzzle_id === puzzleId);
+        
+        if (!existingEvaluation) {
+            return res.json({ evaluation: null });
+        }
+        
+        res.json({ evaluation: existingEvaluation.evaluation });
+        
+    } catch (error) {
+        console.error('Error getting evaluation:', error);
+        res.status(500).json({ error: 'Failed to get evaluation' });
+    }
+});
+
+// Save or update user's evaluation for a puzzle
+app.post('/api/evaluations/save', authenticateToken, async (req, res) => {
+    try {
+        const username = req.user.username;
+        const { puzzleId, evaluation } = req.body;
+        
+        if (!puzzleId || !evaluation) {
+            return res.status(400).json({ error: 'Puzzle ID and evaluation are required' });
+        }
+        
+        const validEvaluations = ['failed', 'partial', 'solved'];
+        if (!validEvaluations.includes(evaluation)) {
+            return res.status(400).json({ error: 'Invalid evaluation value' });
+        }
+        
+        let votesDoc = await Votes.findOne({});
+        if (!votesDoc) {
+            votesDoc = new Votes({
+                evaluations: new Map()
+            });
+        }
+        
+        let userEvaluations = votesDoc.evaluations.get(username) || [];
+        
+        const existingIndex = userEvaluations.findIndex(e => e.puzzle_id === puzzleId.toString());
+        
+        if (existingIndex >= 0) {
+            // Update existing evaluation
+            userEvaluations[existingIndex] = {
+                puzzle_id: puzzleId.toString(),
+                evaluation: evaluation
+            };
+        } else {
+            // Add new evaluation
+            userEvaluations.push({
+                puzzle_id: puzzleId.toString(),
+                evaluation: evaluation
+            });
+        }
+        
+        votesDoc.evaluations.set(username, userEvaluations);
+        await votesDoc.save();
+        
+        res.json({ 
+            success: true, 
+            message: 'Evaluation saved'
+        });
+        
+    } catch (error) {
+        console.error('Error saving evaluation:', error);
+        res.status(500).json({ error: 'Failed to save evaluation' });
     }
 });
 
@@ -358,7 +416,6 @@ app.get('/api/puzzles/:id', async (req, res) => {
 app.get('/api/puzzles/random/:difficulty', async (req, res) => {
     try {
         const { difficulty } = req.params;
-        console.log(`[API] Fetching ${difficulty} puzzle`);
         
         const ranges = {
             easy: { min: 1, max: 222 },
@@ -389,16 +446,12 @@ app.get('/api/puzzles/random/:difficulty', async (req, res) => {
             }
         }
         
-        console.log(`[API] Found ${puzzlesInRange.length} puzzles in ${difficulty} range`);
-        
         if (puzzlesInRange.length === 0) {
             return res.status(404).json({ error: `No ${difficulty} puzzles found` });
         }
         
         const randomIndex = Math.floor(Math.random() * puzzlesInRange.length);
         const randomPuzzle = puzzlesInRange[randomIndex];
-        
-        console.log(`[API] Returning puzzle ID: ${randomPuzzle.puzzle_id}`);
         
         const response = {
             puzzle_id: randomPuzzle.puzzle_id,
@@ -413,7 +466,7 @@ app.get('/api/puzzles/random/:difficulty', async (req, res) => {
         res.json(response);
         
     } catch (error) {
-        console.error('[API] Error:', error);
+        console.error('Error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -455,16 +508,18 @@ app.get('/api/puzzles/range/:min/:max', async (req, res) => {
     }
 });
 
+// ========== SERVER STARTUP ==========
+
 app.listen(PORT, () => {
     console.log(`\n=== Woodpecker Chess Server ===`);
     console.log(`Server running on port ${PORT}`);
     console.log(`Database: woodpecker_boards`);
-    console.log(`Users structure: Array within single document`);
     console.log(`\nAvailable Endpoints:`);
-    console.log(`  Health Check:  GET  http://localhost:${PORT}/api/health`);
-    console.log(`  Debug Users:   GET  http://localhost:${PORT}/api/auth/debug-users`);
-    console.log(`  Register:      POST http://localhost:${PORT}/api/auth/register`);
-    console.log(`  Login:         POST http://localhost:${PORT}/api/auth/login`);
-    console.log(`  Get User:      GET  http://localhost:${PORT}/api/auth/me (requires token)`);
-    console.log(`  Random Puzzle: GET  http://localhost:${PORT}/api/puzzles/random/:difficulty`);
+    console.log(`  Health Check:     GET  http://localhost:${PORT}/api/health`);
+    console.log(`  Register:         POST http://localhost:${PORT}/api/auth/register`);
+    console.log(`  Login:            POST http://localhost:${PORT}/api/auth/login`);
+    console.log(`  Get User:         GET  http://localhost:${PORT}/api/auth/me (requires token)`);
+    console.log(`  Get Evaluation:   GET  http://localhost:${PORT}/api/evaluations/:puzzleId (requires token)`);
+    console.log(`  Save Evaluation:  POST http://localhost:${PORT}/api/evaluations/save (requires token)`);
+    console.log(`  Random Puzzle:    GET  http://localhost:${PORT}/api/puzzles/random/:difficulty`);
 });

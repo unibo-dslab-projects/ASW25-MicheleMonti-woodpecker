@@ -7,7 +7,7 @@ import DifficultySelector from "./DifficultySelector";
 import PuzzleDescription from "./PuzzleDescription";
 import LoadingOverlay from "./LoadingOverlay";
 import ControlButton, { LoginButton } from "./ControlButton";
-import { getRandomBoardFromAPI, checkAuth, logoutUser } from "./utils/apiUtils";
+import { getRandomBoardFromAPI, checkAuth, logoutUser, saveEvaluation, getEvaluation } from "./utils/apiUtils";
 import { SIDE_CELLS_MAP, fenToBoardMap } from "./utils/boardUtils";
 import LoginPage from "./LoginPage";
 import PuzzleEvaluation from "./PuzzleEvaluation";
@@ -37,9 +37,14 @@ export default function Board() {
     const [error, setError] = useState<string | null>(null);
     const [isLoadingNewPuzzle, setIsLoadingNewPuzzle] = useState<boolean>(false);
     const [evaluation, setEvaluation] = useState<string | null>(null);
+    const [pendingEvaluation, setPendingEvaluation] = useState<{
+        puzzleId: number;
+        evaluation: string;
+    } | null>(null);
     
     const gridElement = useRef<HTMLDivElement>(null);
 
+    // Check authentication status on component mount
     useEffect(() => {
         const checkAuthentication = async () => {
             setIsCheckingAuth(true);
@@ -59,6 +64,42 @@ export default function Board() {
 
         checkAuthentication();
     }, []);
+
+    // Function to save pending evaluation to server
+    const savePendingEvaluation = async () => {
+        if (pendingEvaluation && isLoggedIn) {
+            try {
+                const result = await saveEvaluation(
+                    pendingEvaluation.puzzleId, 
+                    pendingEvaluation.evaluation
+                );
+                if (result.success) {
+                    console.log(`Evaluation saved for puzzle ${pendingEvaluation.puzzleId}: ${pendingEvaluation.evaluation}`);
+                } else {
+                    console.error('Failed to save evaluation:', result.error);
+                }
+            } catch (error) {
+                console.error('Error saving evaluation:', error);
+            } finally {
+                setPendingEvaluation(null);
+            }
+        }
+    };
+
+    // Function to load evaluation for current puzzle
+    const loadCurrentEvaluation = async () => {
+        if (isLoggedIn && puzzleIndex > 0) {
+            try {
+                const result = await getEvaluation(puzzleIndex);
+                if (result.success) {
+                    setEvaluation(result.evaluation || null);
+                    console.log(`Loaded evaluation for puzzle ${puzzleIndex}: ${result.evaluation}`);
+                }
+            } catch (error) {
+                console.error('Error loading evaluation:', error);
+            }
+        }
+    };
 
     function isSideCell(cell: DeskCell): boolean {
         return WHITE_SIDE_CELLS.includes(cell as typeof WHITE_SIDE_CELLS[number]) || BLACK_SIDE_CELLS.includes(cell as typeof BLACK_SIDE_CELLS[number]);
@@ -97,6 +138,9 @@ export default function Board() {
         setIsLoadingNewPuzzle(true);
         
         try {
+            // Save any pending evaluation before loading new puzzle
+            await savePendingEvaluation();
+            
             const newPuzzleData = await getRandomBoardFromAPI(difficulty);
             setPuzzleData(newPuzzleData);
             setDescription(newPuzzleData.description);
@@ -106,7 +150,7 @@ export default function Board() {
             setSelectedCell(null);
             setIsSolutionRevealed(false);
             setPuzzleIndex(newPuzzleData.index);
-            setEvaluation(null);
+            // Don't reset evaluation here - it will be loaded by useEffect
         } catch (error) {
             setError('Failed to load puzzle. Please try again.');
             console.error('Error loading puzzle:', error);
@@ -116,12 +160,13 @@ export default function Board() {
     }
 
     function restartPuzzle() {
-        if (puzzleData) {
-            setBoard(new Map([...puzzleData.boardFromFen, ...SIDE_CELLS_MAP]));
-            setSelectedCell(null);
-            setIsSolutionRevealed(false);
-            setEvaluation(null);
-        }
+        savePendingEvaluation().then(() => {
+            if (puzzleData) {
+                setBoard(new Map([...puzzleData.boardFromFen, ...SIDE_CELLS_MAP]));
+                setSelectedCell(null);
+                setIsSolutionRevealed(false);
+            }
+        });
     }
     
     const getCurrentDifficulty = (): Difficulty => {
@@ -132,6 +177,15 @@ export default function Board() {
 
     useEffect(() => { loadNewPuzzle(); }, []);
     
+    useEffect(() => {
+        if (isLoggedIn && puzzleIndex > 0) {
+            loadCurrentEvaluation();
+        } else {
+            setEvaluation(null);
+        }
+    }, [puzzleIndex, isLoggedIn]);
+    
+    // Animation observer for piece movements
     useEffect(() => {
         function callback(mutations: MutationRecord[]) {
             let from = null, to = null, piece = null;
@@ -162,13 +216,36 @@ export default function Board() {
     };
 
     const handleLogout = async () => {
-        try {
-            await logoutUser();
-            setIsLoggedIn(false);
-            setUsername('');
-            console.log('User logged out');
-        } catch (error) {
-            console.error('Logout error:', error);
+        if (window.confirm(`Are you sure you want to logout, ${username}?`)) {
+            await savePendingEvaluation();
+            
+            try {
+                await logoutUser();
+                setIsLoggedIn(false);
+                setUsername('');
+                setEvaluation(null);
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+    };
+    
+    const handleEvaluationChange = (newEvaluation: string | null) => {
+        if (!isLoggedIn) {
+            return;
+        }
+        
+        const finalEvaluation = evaluation === newEvaluation ? null : newEvaluation;
+        
+        setEvaluation(finalEvaluation);
+        
+        if (finalEvaluation) {
+            setPendingEvaluation({
+                puzzleId: puzzleIndex,
+                evaluation: finalEvaluation
+            });
+        } else {
+            setPendingEvaluation(null);
         }
     };
     
@@ -212,9 +289,9 @@ export default function Board() {
                         <button 
                             onClick={handleLogout}
                             className="px-6 py-3 text-black font-bold rounded-xl transition-all duration-200 
-                                    shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 active:shadow-md
-                                    border-b-4 border-gray-700 hover:border-gray-800
-                                    hover:brightness-110 active:brightness-95 relative z-10"
+                                      shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 active:shadow-md
+                                      border-b-4 border-gray-700 hover:border-gray-800
+                                      hover:brightness-110 active:brightness-95 relative z-10"
                             style={{ backgroundColor: 'var(--black-cell-color)' }}
                             title="Click to logout"
                         >
@@ -235,11 +312,13 @@ export default function Board() {
                                shadow-2xl border-2 border-white/10 relative"
                     style={{ backgroundColor: 'var(--white-cell-color)' }}
                 >
-                    <div className="relative"><DifficultySelector difficulty={difficulty} setDifficulty={setDifficulty} /></div>
+                    <div className="relative">
+                        <DifficultySelector difficulty={difficulty} setDifficulty={setDifficulty} />
+                    </div>
                     <PuzzleEvaluation 
                         isLoggedIn={isLoggedIn}
                         selectedEvaluation={evaluation}
-                        onEvaluationChange={setEvaluation}
+                        onEvaluationChange={handleEvaluationChange}
                     />
                     <ControlButton onClick={restartPuzzle} title="Reset current puzzle to starting position">Restart Puzzle</ControlButton>
                     <ControlButton onClick={loadNewPuzzle} title="Load a new random puzzle">Next Puzzle</ControlButton>
