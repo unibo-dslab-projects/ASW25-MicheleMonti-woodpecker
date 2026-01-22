@@ -1,4 +1,3 @@
-// Board.tsx - Updated with authentication
 import { useEffect, useRef, useState } from "react";
 import { DeskCell, BOARD_CELLS, COLUMNS, ROWS, SideCell, WHITE_SIDE_CELLS, BLACK_SIDE_CELLS, PieceType } from "../defs";
 import { Difficulty } from "./constants";
@@ -41,7 +40,6 @@ export default function Board() {
     
     const gridElement = useRef<HTMLDivElement>(null);
 
-    // Check authentication status on component mount
     useEffect(() => {
         const checkAuthentication = async () => {
             setIsCheckingAuth(true);
@@ -174,7 +172,6 @@ export default function Board() {
         }
     };
     
-    // Show Login Page if state is true
     if (showLoginPage) {
         return <LoginPage onBack={() => setShowLoginPage(false)} onLoginSuccess={handleLoginSuccess} />;
     }
@@ -197,7 +194,6 @@ export default function Board() {
     
     return (
         <div className="flex flex-col items-center min-h-screen bg-black-background p-4">
-            {/* Combined header row with PuzzleDescription and Login/User info */}
             <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div className="flex-1">
                     <PuzzleDescription 

@@ -6,9 +6,13 @@ interface LoginPageProps {
     onLoginSuccess: (username: string) => void;
 }
 
+type FormMode = 'login' | 'register';
+
 export default function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
+    const [mode, setMode] = useState<FormMode>('login');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -16,25 +20,37 @@ export default function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
         e.preventDefault();
         setError(null);
         
-        // Basic validation
         if (!username.trim() || !password.trim()) {
             setError('Please enter both username and password');
             return;
         }
         
+        if (mode === 'register') {
+            if (password !== confirmPassword) {
+                setError('Passwords do not match');
+                return;
+            }
+            
+            if (password.length < 6) {
+                setError('Password must be at least 6 characters long');
+                return;
+            }
+            
+            setError('Registration is not yet implemented on the server');
+            setIsLoading(false);
+            return;
+        }
+
         setIsLoading(true);
 
         try {
-            // Call the login API from your Express server
             const result = await loginUser(username.trim(), password.trim());
 
             if (result.success && result.username) {
-                // Server verified credentials and returned JWT
                 console.log('Login successful, token stored');
                 onLoginSuccess(result.username);
                 onBack();
             } else {
-                // Server returned an error
                 setError(result.error || 'Invalid username or password');
             }
         } catch (error) {
@@ -45,11 +61,17 @@ export default function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
         }
     };
 
-    // Optional: Pre-fill for testing (remove in production)
-    const fillTestCredentials = () => {
-        setUsername('Michele');
-        setPassword('test123'); // You'll need to know the actual password
+    const resetForm = () => {
+        setUsername('');
+        setPassword('');
+        setConfirmPassword('');
         setError(null);
+    };
+
+    const toggleMode = () => {
+        const newMode = mode === 'login' ? 'register' : 'login';
+        setMode(newMode);
+        resetForm();
     };
 
     return (
@@ -70,7 +92,15 @@ export default function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
                     className="rounded-2xl p-8 shadow-2xl border-2 border-white/10"
                     style={{ backgroundColor: 'var(--white-cell-color)' }}
                 >
-                    <h1 className="text-3xl font-bold text-neutral-800 text-center mb-8">Login</h1>
+                    <h1 className="text-3xl font-bold text-neutral-800 text-center mb-2">
+                        {mode === 'login' ? 'Login' : 'Register'}
+                    </h1>
+                    
+                    <p className="text-neutral-600 text-center mb-6">
+                        {mode === 'login' 
+                            ? 'Login to save your puzzle progress'
+                            : 'Create a new account to save your progress'}
+                    </p>
                     
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
@@ -104,12 +134,33 @@ export default function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
                                 className="w-full px-4 py-3 rounded-lg bg-white/90 border border-white/20 text-neutral-800 
                                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
                                          transition-all duration-200"
-                                placeholder="Enter your password"
+                                placeholder={mode === 'login' ? 'Enter your password' : 'Choose a password'}
                                 disabled={isLoading}
                                 required
-                                autoComplete="current-password"
+                                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                             />
                         </div>
+                        
+                        {mode === 'register' && (
+                            <div>
+                                <label htmlFor="confirmPassword" className="block text-neutral-700 font-medium mb-2">
+                                    Confirm Password
+                                </label>
+                                <input
+                                    type="password"
+                                    id="confirmPassword"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg bg-white/90 border border-white/20 text-neutral-800 
+                                             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
+                                             transition-all duration-200"
+                                    placeholder="Confirm your password"
+                                    disabled={isLoading}
+                                    required
+                                    autoComplete="new-password"
+                                />
+                            </div>
+                        )}
                         
                         {error && (
                             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -132,16 +183,27 @@ export default function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    Authenticating...
+                                    {mode === 'login' ? 'Authenticating...' : 'Creating account...'}
                                 </span>
-                            ) : 'Login'}
+                            ) : mode === 'login' ? 'Login' : 'Register'}
                         </button>
                     </form>
                     
                     <div className="mt-8 pt-6 border-t border-white/10">
-                        <p className="text-neutral-600 text-center text-sm">
-                            Connected to MongoDB Atlas for puzzles
-                        </p>
+                        <div className="flex flex-col items-center gap-4">
+                            <button
+                                onClick={toggleMode}
+                                className="text-neutral-600 hover:text-neutral-800 font-medium transition-colors duration-200"
+                            >
+                                {mode === 'login' 
+                                    ? "Don't have an account? Register here" 
+                                    : 'Already have an account? Login here'}
+                            </button>
+
+                            <p className="text-neutral-600 text-center text-sm">
+                                Connected to MongoDB Atlas for puzzles
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
