@@ -282,3 +282,128 @@ export async function getEvaluation(
         return { success: false, error: 'Failed to get evaluation' };
     }
 }
+
+export async function getPuzzleByIdFromAPI(puzzleId: number): Promise<{
+    board: any,
+    index: number,
+    boardFromFen: Map<BoardCell, PieceType>,
+    direction: string,
+    description: string,
+    solution: string
+}> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/puzzles/${puzzleId}`);
+        if (!response.ok) throw new Error(`Failed to fetch puzzle: ${response.statusText}`);
+        
+        const puzzleData = await response.json();
+        let fen = puzzleData.fen;
+        try { fen = decodeURIComponent(fen); } catch (e) {}
+        
+        return {
+            board: puzzleData,
+            index: puzzleData.puzzle_id,
+            boardFromFen: fenToBoardMap(fen),
+            direction: puzzleData.direction,
+            description: puzzleData.descr,
+            solution: puzzleData.solution || 'No solution available'
+        };
+    } catch (error) {
+        console.error('Error fetching puzzle by ID:', error);
+        return getFallbackBoard('easy');
+    }
+}
+
+export async function getRecentEvaluations(
+    limit: number = 3
+): Promise<{ 
+    success: boolean; 
+    evaluations?: Array<{
+        puzzleId: string;
+        evaluation: string;
+        puzzle: {
+            descr: string;
+            fen: string;
+            direction: string;
+            solution: string;
+        } | null;
+        timestamp?: string;
+    }>;
+    error?: string;
+}> {
+    try {
+        const token = getToken();
+        
+        if (!token) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const response = await fetch(`${API_BASE_URL}/evaluations/user/recent?limit=${limit}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+        });
+
+        if (!response.ok) {
+            return { 
+                success: false, 
+                error: `Failed to get recent evaluations (${response.status})` 
+            };
+        }
+
+        const data = await response.json();
+        return { 
+            success: true, 
+            evaluations: data.evaluations
+        };
+    } catch (error) {
+        console.error('Error getting recent evaluations:', error);
+        return { success: false, error: 'Failed to get recent evaluations' };
+    }
+}
+
+export async function getUserStats(): Promise<{ 
+    success: boolean; 
+    stats?: {
+        totalPuzzles: number;
+        solvedCount: number;
+        partialCount: number;
+        failedCount: number;
+        successRate: number;
+        difficultyBreakdown: {
+            easy: number;
+            medium: number;
+            hard: number;
+        };
+    };
+    error?: string;
+}> {
+    try {
+        const token = getToken();
+        
+        if (!token) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const response = await fetch(`${API_BASE_URL}/evaluations/user/stats`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+        });
+
+        if (!response.ok) {
+            return { 
+                success: false, 
+                error: `Failed to get user stats (${response.status})` 
+            };
+        }
+
+        const data = await response.json();
+        return { 
+            success: true, 
+            stats: data.stats
+        };
+    } catch (error) {
+        console.error('Error getting user stats:', error);
+        return { success: false, error: 'Failed to get user stats' };
+    }
+}

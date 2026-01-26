@@ -21,7 +21,6 @@ mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB Atlas (woodpecker_boards database)'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-
 const evaluationSchema = new mongoose.Schema({
     puzzle_id: {
         type: String,
@@ -106,6 +105,46 @@ function extractPuzzlesFromDocument(doc) {
     }
     
     return puzzles.sort((a, b) => a.puzzle_id - b.puzzle_id);
+}
+
+// Helper function to get user evaluations
+async function getUserEvaluations(username) {
+    const votesDoc = await Votes.findOne({});
+    
+    if (!votesDoc || !votesDoc.evaluations) {
+        return [];
+    }
+    
+    const userEvaluations = votesDoc.evaluations.get(username);
+    return userEvaluations || [];
+}
+
+// Helper function to get puzzle details
+async function getPuzzleDetails(puzzleId) {
+    const doc = await Puzzle.findOne();
+    if (!doc || !doc[puzzleId]) {
+        return null;
+    }
+    
+    const puzzle = doc[puzzleId];
+    return {
+        descr: puzzle.descr,
+        fen: puzzle.fen,
+        direction: puzzle.direction,
+        solution: puzzle.solution || 'No solution available'
+    };
+}
+
+// Helper function to format evaluation response
+function formatEvaluationResponse(evalItem, includePuzzleDetails = false) {
+    const baseResponse = {
+        puzzleId: evalItem.puzzle_id,
+        evaluation: evalItem.evaluation
+    };
+    
+    return includePuzzleDetails 
+        ? { ...baseResponse, puzzle: null } // We'll add puzzle details separately
+        : baseResponse;
 }
 
 // Registration route
@@ -257,22 +296,15 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     }
 });
 
-
 // Get user's evaluation for a specific puzzle
 app.get('/api/evaluations/:puzzleId', authenticateToken, async (req, res) => {
     try {
         const username = req.user.username;
         const puzzleId = req.params.puzzleId;
         
-        const votesDoc = await Votes.findOne({});
+        const userEvaluations = await getUserEvaluations(username);
         
-        if (!votesDoc || !votesDoc.evaluations) {
-            return res.json({ evaluation: null });
-        }
-        
-        const userEvaluations = votesDoc.evaluations.get(username);
-        
-        if (!userEvaluations || userEvaluations.length === 0) {
+        if (userEvaluations.length === 0) {
             return res.json({ evaluation: null });
         }
         
@@ -287,6 +319,107 @@ app.get('/api/evaluations/:puzzleId', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Error getting evaluation:', error);
         res.status(500).json({ error: 'Failed to get evaluation' });
+    }
+});
+
+// Get ALL user evaluations for statistics
+app.get('/api/evaluations/user/all', authenticateToken, async (req, res) => {
+    try {
+        const username = req.user.username;
+        
+        const userEvaluations = await getUserEvaluations(username);
+        
+        res.json({ 
+            evaluations: userEvaluations.map(e => formatEvaluationResponse(e, false))
+        });
+        
+    } catch (error) {
+        console.error('Error getting user evaluations:', error);
+        res.status(500).json({ error: 'Failed to get user evaluations' });
+    }
+});
+
+// Get user's recent evaluations
+app.get('/api/evaluations/user/recent', authenticateToken, async (req, res) => {
+    try {
+        const username = req.user.username;
+        const limit = parseInt(req.query.limit) || 3;
+        
+        const userEvaluations = await getUserEvaluations(username);
+        
+        if (userEvaluations.length === 0) {
+            return res.json({ evaluations: [] });
+        }
+        
+        const recentEvaluations = userEvaluations.slice(-limit).reverse();
+        
+        // Get puzzle details for each evaluation
+        const evaluationsWithDetails = await Promise.all(
+            recentEvaluations.map(async (evalItem) => {
+                const puzzleDetails = await getPuzzleDetails(evalItem.puzzle_id);
+                return {
+                    ...formatEvaluationResponse(evalItem, true),
+                    puzzle: puzzleDetails
+                };
+            })
+        );
+        
+        res.json({ 
+            evaluations: evaluationsWithDetails
+        });
+        
+    } catch (error) {
+        console.error('Error getting recent evaluations:', error);
+        res.status(500).json({ error: 'Failed to get recent evaluations' });
+    }
+});
+
+// Get user statistics directly
+app.get('/api/evaluations/user/stats', authenticateToken, async (req, res) => {
+    try {
+        const username = req.user.username;
+        const userEvaluations = await getUserEvaluations(username);
+        
+        const total = userEvaluations.length;
+        const solvedCount = userEvaluations.filter(e => e.evaluation === 'solved').length;
+        const partialCount = userEvaluations.filter(e => e.evaluation === 'partial').length;
+        const failedCount = userEvaluations.filter(e => e.evaluation === 'failed').length;
+        const successRate = total > 0 ? Math.round((solvedCount / total) * 100) : 0;
+        
+        // Calculate difficulty breakdown
+        const easyCount = userEvaluations.filter(e => {
+            const id = parseInt(e.puzzle_id);
+            return id >= 1 && id <= 222;
+        }).length;
+        
+        const mediumCount = userEvaluations.filter(e => {
+            const id = parseInt(e.puzzle_id);
+            return id >= 223 && id <= 984;
+        }).length;
+        
+        const hardCount = userEvaluations.filter(e => {
+            const id = parseInt(e.puzzle_id);
+            return id >= 985 && id <= 1128;
+        }).length;
+        
+        res.json({
+            stats: {
+                totalPuzzles: total,
+                solvedCount,
+                partialCount,
+                failedCount,
+                successRate,
+                difficultyBreakdown: {
+                    easy: easyCount,
+                    medium: mediumCount,
+                    hard: hardCount
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error getting user stats:', error);
+        res.status(500).json({ error: 'Failed to get user stats' });
     }
 });
 
@@ -366,7 +499,6 @@ app.get('/api/health', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
 
 app.get('/api/puzzles', async (req, res) => {
     try {
@@ -520,6 +652,12 @@ app.listen(PORT, () => {
     console.log(`  Login:            POST http://localhost:${PORT}/api/auth/login`);
     console.log(`  Get User:         GET  http://localhost:${PORT}/api/auth/me (requires token)`);
     console.log(`  Get Evaluation:   GET  http://localhost:${PORT}/api/evaluations/:puzzleId (requires token)`);
+    console.log(`  Get User Stats:   GET  http://localhost:${PORT}/api/evaluations/user/stats (requires token)`);
+    console.log(`  Get Recent Evals: GET  http://localhost:${PORT}/api/evaluations/user/recent (requires token)`);
+    console.log(`  Get All Evals:    GET  http://localhost:${PORT}/api/evaluations/user/all (requires token)`);
     console.log(`  Save Evaluation:  POST http://localhost:${PORT}/api/evaluations/save (requires token)`);
+    console.log(`  All Puzzles:      GET  http://localhost:${PORT}/api/puzzles`);
+    console.log(`  Puzzle by ID:     GET  http://localhost:${PORT}/api/puzzles/:id`);
     console.log(`  Random Puzzle:    GET  http://localhost:${PORT}/api/puzzles/random/:difficulty`);
+    console.log(`  Puzzle Range:     GET  http://localhost:${PORT}/api/puzzles/range/:min/:max`);
 });

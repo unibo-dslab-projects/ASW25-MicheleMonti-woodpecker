@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { DeskCell, BOARD_CELLS, COLUMNS, ROWS, SideCell, WHITE_SIDE_CELLS, BLACK_SIDE_CELLS, PieceType } from "../defs";
+import { DeskCell, BOARD_CELLS, COLUMNS, ROWS, WHITE_SIDE_CELLS, BLACK_SIDE_CELLS, PieceType } from "../defs";
 import { Difficulty } from "./constants";
 import Piece from "./Piece";
 import Square from "./Square";
@@ -7,19 +7,21 @@ import DifficultySelector from "./DifficultySelector";
 import PuzzleDescription from "./PuzzleDescription";
 import LoadingOverlay from "./LoadingOverlay";
 import ControlButton, { LoginButton } from "./ControlButton";
-import { getRandomBoardFromAPI, checkAuth, logoutUser, saveEvaluation, getEvaluation } from "./utils/apiUtils";
-import { SIDE_CELLS_MAP, fenToBoardMap } from "./utils/boardUtils";
+import { getRandomBoardFromAPI, getPuzzleByIdFromAPI, checkAuth, saveEvaluation, getEvaluation } from "./utils/apiUtils";
+import { SIDE_CELLS_MAP } from "./utils/boardUtils";
 import LoginPage from "./LoginPage";
 import PuzzleEvaluation from "./PuzzleEvaluation";
+import UserProfile from "./UserProfile";
 
 export default function Board() {
     const [showLoginPage, setShowLoginPage] = useState<boolean>(false);
+    const [showProfilePage, setShowProfilePage] = useState<boolean>(false);
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [username, setUsername] = useState<string>('');
     const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
     const [difficulty, setDifficulty] = useState<Difficulty>('easy');
     const [puzzleData, setPuzzleData] = useState<{
-        board: any,
+        board: Map<DeskCell, PieceType>,
         index: number,
         boardFromFen: Map<DeskCell, PieceType>,
         direction: string,
@@ -150,7 +152,33 @@ export default function Board() {
             setSelectedCell(null);
             setIsSolutionRevealed(false);
             setPuzzleIndex(newPuzzleData.index);
-            // Don't reset evaluation here - it will be loaded by useEffect
+        } catch (error) {
+            setError('Failed to load puzzle. Please try again.');
+            console.error('Error loading puzzle:', error);
+        } finally {
+            setIsLoadingNewPuzzle(false);
+        }
+    }
+
+    async function loadSpecificPuzzle(puzzleId: number) {
+        setError(null);
+        setIsLoadingNewPuzzle(true);
+        setShowProfilePage(false); // Close profile page
+        
+        try {
+            // Save any pending evaluation before loading new puzzle
+            await savePendingEvaluation();
+            
+            const newPuzzleData = await getPuzzleByIdFromAPI(puzzleId);
+            setPuzzleData(newPuzzleData);
+            setDescription(newPuzzleData.description);
+            setBoard(new Map([...newPuzzleData.boardFromFen, ...SIDE_CELLS_MAP]));
+            setDirection(newPuzzleData.direction);
+            setSolution(newPuzzleData.solution);
+            setSelectedCell(null);
+            setIsSolutionRevealed(false);
+            setPuzzleIndex(newPuzzleData.index);
+            
         } catch (error) {
             setError('Failed to load puzzle. Please try again.');
             console.error('Error loading puzzle:', error);
@@ -214,21 +242,6 @@ export default function Board() {
         setUsername(loggedInUsername);
         setShowLoginPage(false);
     };
-
-    const handleLogout = async () => {
-        if (window.confirm(`Are you sure you want to logout, ${username}?`)) {
-            await savePendingEvaluation();
-            
-            try {
-                await logoutUser();
-                setIsLoggedIn(false);
-                setUsername('');
-                setEvaluation(null);
-            } catch (error) {
-                console.error('Logout error:', error);
-            }
-        }
-    };
     
     const handleEvaluationChange = (newEvaluation: string | null) => {
         if (!isLoggedIn) {
@@ -248,9 +261,25 @@ export default function Board() {
             setPendingEvaluation(null);
         }
     };
+
+    const handleLogoutComplete = () => {
+        setIsLoggedIn(false);
+        setUsername('');
+        setEvaluation(null);
+        setShowProfilePage(false);
+    };
     
     if (showLoginPage) {
         return <LoginPage onBack={() => setShowLoginPage(false)} onLoginSuccess={handleLoginSuccess} />;
+    }
+    
+    if (showProfilePage) {
+        return <UserProfile 
+            onBack={() => setShowProfilePage(false)} 
+            onLogout={handleLogoutComplete}
+            username={username}
+            onPuzzleClick={loadSpecificPuzzle}
+        />;
     }
     
     if (error && !puzzleData) {
@@ -287,13 +316,13 @@ export default function Board() {
                         </div>
                     ) : isLoggedIn ? (
                         <button 
-                            onClick={handleLogout}
+                            onClick={() => setShowProfilePage(true)}
                             className="px-6 py-3 text-black font-bold rounded-xl transition-all duration-200 
                                       shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 active:shadow-md
                                       border-b-4 border-gray-700 hover:border-gray-800
                                       hover:brightness-110 active:brightness-95 relative z-10"
                             style={{ backgroundColor: 'var(--black-cell-color)' }}
-                            title="Click to logout"
+                            title="View your profile"
                         >
                             {username}
                         </button>
