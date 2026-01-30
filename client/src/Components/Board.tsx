@@ -12,8 +12,10 @@ import { SIDE_CELLS_MAP } from "./utils/boardUtils";
 import LoginPage from "./LoginPage";
 import PuzzleEvaluation from "./PuzzleEvaluation";
 import UserProfile from "./UserProfile";
+import { useNavigate } from 'react-router-dom';
 
 export default function Board() {
+    const navigate = useNavigate();
     const [showLoginPage, setShowLoginPage] = useState<boolean>(false);
     const [showProfilePage, setShowProfilePage] = useState<boolean>(false);
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -29,6 +31,11 @@ export default function Board() {
         solution: string
     } | null>(null);
     
+    const sharePuzzle = () => {
+        const roomId = `room_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        navigate(`/room/${roomId}?puzzleId=${puzzleIndex}`);
+    };
+
     const [board, setBoard] = useState<Map<DeskCell, PieceType>>(new Map([...SIDE_CELLS_MAP]));
     const [selectedCell, setSelectedCell] = useState<DeskCell | null>(null);
     const [direction, setDirection] = useState<string>('w');
@@ -351,6 +358,7 @@ export default function Board() {
                     />
                     <ControlButton onClick={restartPuzzle} title="Reset current puzzle to starting position">Restart Puzzle</ControlButton>
                     <ControlButton onClick={loadNewPuzzle} title="Load a new random puzzle">Next Puzzle</ControlButton>
+                    <ControlButton onClick={sharePuzzle} title="Create a shared room for this puzzle">Share Puzzle</ControlButton>
                 </div>
                 
                 <div className="order-1 md:order-2 relative">

@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
@@ -15,7 +17,7 @@ app.use(express.json());
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const JWT_SECRET = process.env.JWT_SECRET;
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3001;
 
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB Atlas (woodpecker_boards database)'))
@@ -640,11 +642,123 @@ app.get('/api/puzzles/range/:min/:max', async (req, res) => {
     }
 });
 
+// ========== SOCKET.IO SETUP ==========
+
+// Create HTTP server for Socket.IO
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = new Server(server, {
+    cors: {
+        origin: 'http://localhost:5173',
+        credentials: true,
+        methods: ['GET', 'POST']
+    }
+});
+
+const activeRooms = new Map();
+
+io.on('connection', (socket) => {
+    console.log(`New socket connection: ${socket.id}`);
+    
+    socket.on('join-room', (roomId, puzzleId) => {
+        console.log(`${socket.id} joining room: ${roomId} (puzzle: ${puzzleId})`);
+        
+        socket.rooms.forEach(room => {
+            if (room !== socket.id) {
+                socket.leave(room);
+            }
+        });
+        
+        socket.join(roomId);
+        
+        if (!activeRooms.has(roomId)) {
+            activeRooms.set(roomId, {
+                puzzleId: parseInt(puzzleId),
+                users: new Set([socket.id])
+            });
+            console.log(`Created new room: ${roomId}`);
+        } else {
+            const room = activeRooms.get(roomId);
+            room.users.add(socket.id);
+            console.log(`${socket.id} joined existing room ${roomId}. Total users: ${room.users.size}`);
+            
+            socket.to(roomId).emit('user-joined', socket.id);
+        }
+        
+        socket.emit('room-joined', { 
+            roomId, 
+            puzzleId: parseInt(puzzleId),
+            usersCount: activeRooms.get(roomId).users.size
+        });
+        
+        const currentUsers = Array.from(activeRooms.get(roomId).users);
+        socket.emit('room-users', currentUsers.filter(id => id !== socket.id));
+    });
+
+    socket.on('reset-board', (roomId) => {
+        console.log(`Reset board requested in room ${roomId} by ${socket.id}`);
+        
+        io.to(roomId).emit('board-reset');
+    });
+    
+    socket.on('move-piece', (roomId, moveData) => {
+        console.log(`Move in room ${roomId} from ${socket.id}:`, moveData);
+        
+        socket.to(roomId).emit('piece-moved', moveData);
+    });
+    
+    socket.on('side-piece-moved', (roomId, moveData) => {
+        console.log(`Side piece move in room ${roomId} from ${socket.id}:`, moveData);
+        
+        socket.to(roomId).emit('side-piece-moved', moveData);
+    });
+    
+    socket.on('disconnect', () => {
+        console.log(`Socket disconnected: ${socket.id}`);
+        
+        activeRooms.forEach((room, roomId) => {
+            if (room.users.has(socket.id)) {
+                room.users.delete(socket.id);
+                
+                socket.to(roomId).emit('user-left', socket.id);
+                
+                if (room.users.size === 0) {
+                    activeRooms.delete(roomId);
+                    console.log(`Room ${roomId} destroyed (no users left)`);
+                } else {
+                    console.log(`User ${socket.id} left room ${roomId}. Remaining users: ${room.users.size}`);
+                }
+            }
+        });
+    });
+    
+    // Handle room leave
+    socket.on('leave-room', (roomId) => {
+        console.log(`${socket.id} leaving room: ${roomId}`);
+        
+        socket.leave(roomId);
+        
+        if (activeRooms.has(roomId)) {
+            const room = activeRooms.get(roomId);
+            room.users.delete(socket.id);
+            
+            socket.to(roomId).emit('user-left', socket.id);
+            
+            if (room.users.size === 0) {
+                activeRooms.delete(roomId);
+                console.log(`Room ${roomId} destroyed (no users left)`);
+            }
+        }
+    });
+});
+
 // ========== SERVER STARTUP ==========
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`\n=== Woodpecker Chess Server ===`);
-    console.log(`Server running on port ${PORT}`);
+    console.log(`HTTP Server running on port ${PORT}`);
+    console.log(`Socket.IO Server ready for connections`);
     console.log(`Database: woodpecker_boards`);
     console.log(`\nAvailable Endpoints:`);
     console.log(`  Health Check:     GET  http://localhost:${PORT}/api/health`);
@@ -660,4 +774,9 @@ app.listen(PORT, () => {
     console.log(`  Puzzle by ID:     GET  http://localhost:${PORT}/api/puzzles/:id`);
     console.log(`  Random Puzzle:    GET  http://localhost:${PORT}/api/puzzles/random/:difficulty`);
     console.log(`  Puzzle Range:     GET  http://localhost:${PORT}/api/puzzles/range/:min/:max`);
+    console.log(`\nSocket.IO Events:`);
+    console.log(`  Connect to:       ws://localhost:${PORT}`);
+    console.log(`  Join room:        emit 'join-room', roomId, puzzleId`);
+    console.log(`  Move piece:       emit 'move-piece', roomId, moveData`);
+    console.log(`  Leave room:       emit 'leave-room', roomId`);
 });
