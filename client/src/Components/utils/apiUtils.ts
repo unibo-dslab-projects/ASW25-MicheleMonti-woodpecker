@@ -1,4 +1,3 @@
-// utils/apiUtils.ts
 import { Difficulty } from "../constants";
 import { fenToBoardMap, getFallbackBoard } from "./boardUtils";
 import { BoardCell, PieceType } from "../../defs";

@@ -27,6 +27,7 @@ export default function ControlButton({ onClick, title, children }: ControlButto
     );
 }
 
+// Export LoginButton as default from a separate file or keep as named export
 export function LoginButton({ onClick, title = "Login to save your progress" }: LoginButtonProps) {
     return (
         <button 
