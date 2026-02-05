@@ -84,22 +84,20 @@ export default function UserProfile({ onBack, onLogout, username, onPuzzleClick 
     }, [username]);
 
     const handleLogout = async () => {
-        if (window.confirm(`Are you sure you want to logout, ${username}?`)) {
-            setIsLoading(true);
-            try {
-                const result = await logoutUser();
-                if (result.success) {
-                    onLogout();
-                    onBack();
-                } else {
-                    setError(result.error || 'Logout failed');
-                }
-            } catch (error) {
-                console.error('Logout error:', error);
-                setError('Logout failed');
-            } finally {
-                setIsLoading(false);
+        setIsLoading(true);
+        try {
+            const result = await logoutUser();
+            if (result.success) {
+                onLogout();
+                onBack();
+            } else {
+                setError(result.error || 'Logout failed');
             }
+        } catch (error) {
+            console.error('Logout error:', error);
+            setError('Logout failed');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -426,8 +424,8 @@ export default function UserProfile({ onBack, onLogout, username, onPuzzleClick 
                             <p className="text-neutral-600 text-sm">
                                 You've attempted <span className="font-semibold text-neutral-800">{stats.totalPuzzles}</span> puzzles
                                 {stats.successRate > 0 && ` with a ${stats.successRate}% success rate`}.
-                                {stats.successRate >= 80 && ' Keep up the great work! 🎉'}
-                                {stats.successRate > 0 && stats.successRate < 50 && ' Keep practicing! Every puzzle makes you better. 💪'}
+                                {stats.successRate >= 80 && ' Keep up the great work!'}
+                                {stats.successRate > 0 && stats.successRate < 50 && ' Keep practicing! Every puzzle makes you better.'}
                             </p>
                         </div>
                     )}

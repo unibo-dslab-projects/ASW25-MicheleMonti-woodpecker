@@ -5,7 +5,6 @@ import { BoardCell, PieceType } from "../../defs";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 console.log('API Base URL:', API_BASE_URL);
 
-// Token management
 const TOKEN_KEY = 'woodpecker_auth_token';
 
 export function getToken(): string | null {
@@ -49,7 +48,6 @@ export async function registerUser(username: string, password: string): Promise<
             };
         }
 
-        // Store the token
         if (data.token) {
             setToken(data.token);
         }
@@ -68,7 +66,6 @@ export async function registerUser(username: string, password: string): Promise<
     }
 }
 
-// Authentication functions
 export async function loginUser(username: string, password: string): Promise<{ 
     success: boolean; 
     username?: string; 
@@ -93,7 +90,6 @@ export async function loginUser(username: string, password: string): Promise<{
             };
         }
 
-        // Store the token
         if (data.token) {
             setToken(data.token);
         }
@@ -114,7 +110,6 @@ export async function loginUser(username: string, password: string): Promise<{
 
 export async function logoutUser(): Promise<{ success: boolean; error?: string }> {
     try {
-        // Remove token from localStorage
         removeToken();
         return { success: true };
     } catch (error) {
@@ -146,7 +141,6 @@ export async function checkAuth(): Promise<{
         });
 
         if (!response.ok) {
-            // If 401 or 403, token is invalid
             if (response.status === 401 || response.status === 403) {
                 removeToken();
                 return { authenticated: false };
@@ -196,7 +190,6 @@ export async function getRandomBoardFromAPI(difficulty: Difficulty = 'easy'): Pr
     }
 }
 
-// Evaluation functions
 export async function saveEvaluation(
     puzzleId: number, 
     evaluation: string

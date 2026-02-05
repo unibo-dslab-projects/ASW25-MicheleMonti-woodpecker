@@ -30,7 +30,7 @@ router.get('/:puzzleId', authenticateToken, async (req, res) => {
     }
 });
 
-// Get ALL user evaluations for statistics
+// Get all user evaluations for statistics
 router.get('/user/all', authenticateToken, async (req, res) => {
     try {
         const username = req.user.username;
@@ -82,7 +82,6 @@ router.get('/user/recent', authenticateToken, async (req, res) => {
     }
 });
 
-// Get user statistics directly
 router.get('/user/stats', authenticateToken, async (req, res) => {
     try {
         const username = req.user.username;

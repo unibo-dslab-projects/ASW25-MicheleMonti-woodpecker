@@ -60,7 +60,6 @@ export default function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
             return;
         }
         
-        // Login logic (existing)
         setIsLoading(true);
 
         try {
@@ -219,10 +218,6 @@ export default function LoginPage({ onBack, onLoginSuccess }: LoginPageProps) {
                                     ? "Don't have an account? Register here" 
                                     : 'Already have an account? Login here'}
                             </button>
-
-                            <p className="text-neutral-600 text-center text-sm">
-                                Connected to MongoDB Atlas for puzzles
-                            </p>
                         </div>
                     </div>
                 </div>

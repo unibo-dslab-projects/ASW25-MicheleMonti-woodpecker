@@ -96,26 +96,26 @@ export const createFreshBoardState = (
 export const getEvaluationInfo = (evaluation: string) => {
   switch (evaluation) {
     case 'solved': 
-      return { text: 'Solved', color: 'text-green-500', bgColor: 'bg-green-500' };
+      return { text: 'Solved', color: 'text-neutral-900' };
     case 'partial': 
-      return { text: 'Partial', color: 'text-yellow-500', bgColor: 'bg-yellow-500' };
+      return { text: 'Partial', color: 'text-neutral-900' };
     case 'failed': 
-      return { text: 'Failed', color: 'text-red-500', bgColor: 'bg-red-500' };
+      return { text: 'Failed', color: 'text-neutral-900' };
     default: 
-      return { text: evaluation, color: 'text-neutral-600', bgColor: 'bg-neutral-500' };
+      return { text: evaluation, color: 'text-neutral-600' };
   }
 };
 
 export const getDifficultyInfo = (difficulty: string) => {
   switch (difficulty.toLowerCase()) {
     case 'easy': 
-      return { color: 'text-green-500', bgColor: 'bg-green-500', label: 'Easy' };
+      return { color: 'text-neutral-900', label: 'Easy' };
     case 'medium': 
-      return { color: 'text-yellow-500', bgColor: 'bg-yellow-500', label: 'Medium' };
+      return { color: 'text-neutral-900', label: 'Medium' };
     case 'hard': 
-      return { color: 'text-red-500', bgColor: 'bg-red-500', label: 'Hard' };
+      return { color: 'text-neutral-900', label: 'Hard' };
     default: 
-      return { color: 'text-neutral-500', bgColor: 'bg-neutral-500', label: difficulty };
+      return { color: 'text-neutral-500', label: difficulty };
   }
 };
 

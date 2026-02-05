@@ -221,7 +221,6 @@ export default function SharedRoom() {
     const handleShareRoom = () => {
         if (navigator.clipboard) {
             navigator.clipboard.writeText(window.location.href);
-            alert('Room URL copied to clipboard!');
         }
     };
 

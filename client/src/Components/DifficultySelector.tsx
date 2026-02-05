@@ -6,15 +6,6 @@ interface DifficultySelectorProps {
 }
 
 export default function DifficultySelector({ difficulty, setDifficulty }: DifficultySelectorProps) {
-    const getActiveColor = (level: Difficulty) => {
-        switch (level) {
-            case 'easy': return 'text-green-600';
-            case 'medium': return 'text-yellow-400';
-            case 'hard': return 'text-red-600';
-            default: return '';
-        }
-    };
-
     return (
         <div className="mb-2">
             <h3 className="font-bold text-lg text-center mb-2 text-neutral-800">Difficulty</h3>
@@ -33,7 +24,7 @@ export default function DifficultySelector({ difficulty, setDifficulty }: Diffic
                                 onClick={() => setDifficulty(level)}
                                 className={`flex-1 px-3 py-2 text-center relative z-10 transition-colors duration-200 ${
                                     isActive 
-                                        ? `font-medium ${getActiveColor(level)}` 
+                                        ? 'font-bold text-neutral-900' 
                                         : 'text-neutral-300 hover:text-white'
                                 }`}
                                 aria-label={`Set difficulty to ${level}`}

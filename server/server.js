@@ -6,7 +6,6 @@ function setupServer(app) {
     const server = http.createServer(app);
     const roomManager = new RoomManager();
 
-    // Initialize Socket.IO
     const io = new Server(server, {
         cors: {
             origin: 'http://localhost:5173',
