@@ -283,7 +283,7 @@ export default function SharedRoom() {
             <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 w-full max-w-6xl">
                 {/* Left Control Panel */}
                 <div 
-                    className="order-2 md:order-1 rounded-2xl p-6 mb-4 md:mb-0 flex flex-col gap-4 min-w-[200px]
+                    className="order-2 xl:order-1 rounded-2xl p-6 mb-4 xl:mb-0 flex flex-col gap-4 min-w-[200px]
                                shadow-2xl border-2 border-white/10 relative"
                     style={{ backgroundColor: 'var(--white-cell-color)' }}
                 >
@@ -323,7 +323,7 @@ export default function SharedRoom() {
                 </div>
                 
                 {/* Board */}
-                <div className="order-1 md:order-2 relative">
+                <div className="order-1 xl:order-2 relative">
                     <ChessBoard
                         board={board}
                         selectedCell={selectedCell}
